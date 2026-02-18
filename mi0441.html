@@ -801,76 +801,70 @@
 
     function startMission(idx) {
         currentMissionIdx = idx;
-        const m = missions[idx];
+        const m = missions[idx]; // 確保您的 missions 資料陣列存在
         
+        // 1. 更新標題與說明
         const titleEl = document.getElementById('mission-title');
         if(titleEl) titleEl.innerText = `任務 ${idx+1}/6：${m.p}`;
         
         const instructionEl = document.getElementById('ch-instruction');
         if(instructionEl) {
+            // 使用 m.genes.join(', ') 顯示親代，例如 T, T, t, t
             instructionEl.innerHTML = `請拖曳親代基因填滿表格 (親代：<span id="parents-text">${m.genes.join(', ')}</span>)`;
         }
         
+        // 2. 清空棋盤 (這會把格子變成空的虛線框)
         resetChallengeGrid();
         
-        // ==========================================
-    // ★ 自動填寫親代基因 (跳過拖曳標題步驟)
-    // ==========================================
-    
-    // 1. 從畫面上抓取目前的題目 (例如 "T, T x t, t")
-    let pTextObj = document.getElementById('parents-text');
-    if (pTextObj) {
-        let pText = pTextObj.innerText; 
-        
-        // 分割出上方和左方的基因
-        // 假設格式是 "T, T x t, t"
-        let parts = pText.split(' x '); 
-        if (parts.length === 2) {
-            let topGenes = parts[0].split(', '); // 取得上方的兩個字母
-            let leftGenes = parts[1].split(', '); // 取得左方的兩個字母
-
-            // 2. 填寫上方標題 (Top)
-            let t1 = document.getElementById('ch-top-1');
-            let t2 = document.getElementById('ch-top-2');
-            if(t1 && t2) {
-                t1.innerText = topGenes[0];
-                t2.innerText = topGenes[1];
-                // 移除虛線框與目標樣式，讓它看起來已經固定了
-                t1.classList.remove('target-zone');
-                t2.classList.remove('target-zone');
-                t1.classList.add('filled');
-                t2.classList.add('filled');
-                // 禁止對它進行操作
-                t1.style.pointerEvents = 'none';
+        // ===============================================
+        // ★ 自動填寫親代基因 (請加入這段邏輯)
+        // ===============================================
+        if (m && m.genes && m.genes.length >= 4) {
+            // 資料結構 m.genes 通常是 [Top1, Top2, Left1, Left2]
+            
+            // --- 設定上方 (Top) ---
+            const t1 = document.getElementById('ch-top-1');
+            const t2 = document.getElementById('ch-top-2');
+            
+            if (t1) { 
+                t1.innerText = m.genes[0];          // 填入文字
+                t1.classList.remove('target-zone'); // 移除虛線框樣式
+                t1.classList.add('filled');         // 加入已填寫樣式
+                t1.style.pointerEvents = 'none';    // ★ 關鍵：鎖定它，不讓使用者操作
+            }
+            if (t2) { 
+                t2.innerText = m.genes[1]; 
+                t2.classList.remove('target-zone'); 
+                t2.classList.add('filled'); 
                 t2.style.pointerEvents = 'none';
             }
 
-            // 3. 填寫左方標題 (Left)
-            let l1 = document.getElementById('ch-left-1');
-            let l2 = document.getElementById('ch-left-2');
-            if(l1 && l2) {
-                l1.innerText = leftGenes[0];
-                l2.innerText = leftGenes[1];
-                l1.classList.remove('target-zone');
-                l2.classList.remove('target-zone');
-                l1.classList.add('filled');
-                l2.classList.add('filled');
+            // --- 設定左方 (Left) ---
+            const l1 = document.getElementById('ch-left-1');
+            const l2 = document.getElementById('ch-left-2');
+            
+            if (l1) { 
+                l1.innerText = m.genes[2]; 
+                l1.classList.remove('target-zone'); 
+                l1.classList.add('filled'); 
                 l1.style.pointerEvents = 'none';
+            }
+            if (l2) { 
+                l2.innerText = m.genes[3]; 
+                l2.classList.remove('target-zone'); 
+                l2.classList.add('filled'); 
                 l2.style.pointerEvents = 'none';
             }
-            
-            // 4. ★ 重要：強制解鎖中間的格子
-            // 原本的程式可能要等標題填滿才會解鎖中間，我們這裡手動解鎖
-            let centerCells = document.querySelectorAll('.c-cell');
+
+            // --- ★ 解鎖中間的格子 (因為親代已經自動填好，中間要直接開放) ---
+            const centerCells = document.querySelectorAll('.c-cell');
             centerCells.forEach(cell => {
-                cell.classList.remove('locked'); // 移除鎖定樣式
-                cell.style.pointerEvents = 'auto'; // 允許滑鼠/手指點擊拖曳
-                
-                // 為了視覺提示，可以把它們變成可放置的樣子
-                cell.classList.add('target-zone'); 
+                cell.classList.remove('locked');    // 移除鎖定外觀
+                cell.style.pointerEvents = 'auto';  // 確保可以接收拖曳
+                // 如果您希望中間格子看起來像放置區，可以加這行 (看您的 CSS 設計)
+                // cell.classList.add('target-zone'); 
             });
         }
-    }
     }
 
     function resetChallengeGrid() {
