@@ -96,17 +96,18 @@
         .container {
             max-width: 800px;
             width: 90%;
-            background-color: var(--kahoot-purple); /* Changed to purple */
+            background-color: var(--kahoot-purple); /* 改為紫色 */
             padding: 40px;
-            border-radius: 15px; /* Kahoot 常用圓角 */
-            box-shadow: 0 15px 0 rgba(0,0,0,0.2); /* Deep shadow */
+            border-radius: 15px;
+            /* 調整陰影讓其在紫色背景上仍有層次感，或者可以移除陰影讓其與背景融合 */
+            box-shadow: none; 
             text-align: center;
             position: relative;
             z-index: 10;
         }
 
         h1 {
-            color: white; /* Changed to white */
+            color: white; /* 改為白色 */
             font-size: 2.5em;
             margin-bottom: 10px;
             font-weight: 900;
@@ -114,7 +115,7 @@
 
         .subtitle {
             font-size: 1.2em;
-            color: #f0f0f0; /* Changed to light gray */
+            color: #f0f0f0; /* 改為淺灰色 */
             margin-bottom: 40px;
             font-weight: bold;
         }
@@ -123,7 +124,7 @@
             font-size: 5em;
             color: var(--kahoot-yellow);
             margin-bottom: 20px;
-            filter: drop-shadow(0 4px 0 #bfa004);
+            filter: drop-shadow(0 4px 0 rgba(0,0,0,0.3));
             animation: floatTrophy 3s ease-in-out infinite;
         }
 
@@ -279,9 +280,9 @@
     // ▼▼▼ 請在這裡設定您的 Kahoot 連結 ▼▼▼
     // ==========================================
     const KAHOOT_LINKS = {
-        1: "https://kahoot.it/challenge/06745639?challenge-id=7730cf4b-d2ef-444a-8f88-85aa805b0bed_1771387820562", // 連結 1
-        2: "https://kahoot.it/challenge/06745639?challenge-id=7730cf4b-d2ef-444a-8f88-85aa805b0bed_1771387820562", // 連結 2
-        3: "https://kahoot.it/challenge/06745639?challenge-id=7730cf4b-d2ef-444a-8f88-85aa805b0bed_1771387820562"  // 連結 3
+        1: "https://create.kahoot.it/share/1/00000000", // 連結 1
+        2: "https://create.kahoot.it/share/2/00000000", // 連結 2
+        3: "https://create.kahoot.it/share/3/00000000"  // 連結 3
     };
     // ==========================================
 
@@ -296,9 +297,10 @@
         setTimeout(() => {
             const url = KAHOOT_LINKS[level];
             if (url && url !== "") {
-                window.open(url, '_blank');
+                // 使用 location.href 在當前分頁跳轉，解決彈跳視窗攔截問題
+                window.location.href = url;
             } else {
-                alert("https://kahoot.it/challenge/06745639?challenge-id=7730cf4b-d2ef-444a-8f88-85aa805b0bed_1771387820562");
+                alert("連結尚未設定！請老師在程式碼中填入 Kahoot 網址。");
             }
         }, 2000); 
     }
