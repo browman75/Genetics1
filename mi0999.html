@@ -1,0 +1,382 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>孟德爾遺傳 - 最終挑戰</title>
+    
+    <!-- 引入 Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- 引入 Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;700&family=Comfortaa:wght@900&display=swap" rel="stylesheet">
+
+    <style>
+        :root {
+            /* Kahoot Color Palette */
+            --kahoot-purple: #46178f;
+            --kahoot-blue: #1368ce;
+            --kahoot-red: #e21b3c;
+            --kahoot-yellow: #ffa602;
+            --kahoot-green: #26890c;
+            
+            --text-color: #333333;
+            --like-color: #ffffff; /* 讚為白色 */
+        }
+
+        html, body {
+            height: 100%;
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            background-color: #46178f !important; /* 強制設定紫色背景 */
+        }
+
+        body {
+            font-family: 'Noto Sans TC', sans-serif;
+            color: var(--text-color);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+        }
+
+        /* Floating Shapes Background (Decorations) */
+        .bg-shape {
+            position: absolute;
+            opacity: 0.15;
+            z-index: -1; /* 確保在最底層 */
+            animation: floatShape 20s infinite linear;
+        }
+        
+        .shape-square { 
+            width: 80px; height: 80px; 
+            background-color: var(--kahoot-yellow); 
+            top: 15%; left: 10%; 
+            transform: rotate(15deg); 
+            animation-duration: 25s;
+        }
+        
+        .shape-circle { 
+            width: 60px; height: 60px; 
+            border-radius: 50%; 
+            background-color: var(--kahoot-red); 
+            bottom: 20%; right: 15%; 
+            animation-duration: 30s;
+        }
+        
+        .shape-triangle { 
+            width: 0; height: 0; 
+            border-left: 40px solid transparent; border-right: 40px solid transparent; 
+            border-bottom: 70px solid var(--kahoot-blue); 
+            top: 20%; right: 25%; 
+            transform: rotate(-20deg);
+            animation-duration: 22s;
+        }
+        
+        .shape-cross {
+            position: absolute;
+            bottom: 15%; left: 20%;
+            font-size: 80px;
+            color: var(--kahoot-green);
+            font-weight: bold;
+            font-family: sans-serif;
+            transform: rotate(45deg);
+            animation-duration: 28s;
+            z-index: -1;
+        }
+
+        @keyframes floatShape {
+            0% { transform: translateY(0) rotate(0deg); }
+            50% { transform: translateY(-30px) rotate(20deg); }
+            100% { transform: translateY(0) rotate(0deg); }
+        }
+
+        .container {
+            max-width: 800px;
+            width: 90%;
+            background-color: var(--kahoot-purple); /* Changed to purple */
+            padding: 40px;
+            border-radius: 15px; /* Kahoot 常用圓角 */
+            box-shadow: 0 15px 0 rgba(0,0,0,0.2); /* Deep shadow */
+            text-align: center;
+            position: relative;
+            z-index: 10;
+        }
+
+        h1 {
+            color: white; /* Changed to white */
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            font-weight: 900;
+        }
+
+        .subtitle {
+            font-size: 1.2em;
+            color: #f0f0f0; /* Changed to light gray */
+            margin-bottom: 40px;
+            font-weight: bold;
+        }
+
+        .trophy-icon {
+            font-size: 5em;
+            color: var(--kahoot-yellow);
+            margin-bottom: 20px;
+            filter: drop-shadow(0 4px 0 #bfa004);
+            animation: floatTrophy 3s ease-in-out infinite;
+        }
+
+        @keyframes floatTrophy {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+
+        /* Kahoot Button Grid */
+        .button-grid {
+            display: flex;
+            justify-content: center;
+            gap: 25px;
+            flex-wrap: wrap;
+        }
+
+        /* Unified Kahoot Button Style */
+        .k-btn {
+            background: white;
+            border: 2px solid #f2f2f2;
+            border-radius: 8px; /* Slightly sharper corners */
+            padding: 20px 30px;
+            width: 200px;
+            cursor: pointer;
+            transition: all 0.1s;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 6px 0 #cccccc; /* Grey shadow */
+        }
+
+        .k-btn:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 10px 0 #bbbbbb;
+            background-color: #fafafa;
+        }
+
+        .k-btn:active {
+            transform: translateY(2px);
+            box-shadow: 0 2px 0 #bbbbbb;
+        }
+
+        /* CSS Drawn Kahoot Logo 'K!' */
+        .kahoot-logo {
+            width: 60px;
+            height: 60px;
+            background-color: var(--kahoot-purple);
+            color: white;
+            font-family: 'Comfortaa', sans-serif;
+            font-weight: 900;
+            font-size: 36px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 4px;
+            margin-bottom: 15px;
+            transform: rotate(-3deg);
+            box-shadow: 2px 2px 0 rgba(0,0,0,0.2);
+        }
+
+        .btn-title { font-weight: 900; font-size: 1.2em; margin-bottom: 5px; color: #333; }
+        .btn-desc { font-size: 0.9em; opacity: 0.6; color: #555; font-weight: bold; }
+
+        /* Animation Elements: Like Particles */
+        .like-particle {
+            position: fixed;
+            bottom: -50px;
+            font-size: 24px;
+            color: var(--like-color); /* Updated to white or orange */
+            pointer-events: none;
+            z-index: 1000;
+            opacity: 0;
+            text-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        }
+
+        @keyframes likeFloatUp {
+            0% {
+                bottom: -50px;
+                opacity: 0;
+                transform: translateX(0) scale(0.5) rotate(0deg);
+            }
+            10% {
+                opacity: 1;
+            }
+            80% {
+                opacity: 1;
+            }
+            100% {
+                bottom: 110vh;
+                opacity: 0;
+                transform: translateX(var(--drift)) scale(1.2) rotate(var(--rot));
+            }
+        }
+
+        /* Confetti */
+        .confetti {
+            position: absolute;
+            width: 8px;
+            height: 8px;
+            background-color: #f00;
+            animation: fall linear forwards;
+            top: -10px;
+            z-index: 1;
+        }
+
+        @keyframes fall {
+            to { transform: translateY(100vh) rotate(720deg); }
+        }
+
+    </style>
+</head>
+<body>
+
+<!-- Background Shapes -->
+<div class="bg-shape shape-square"></div>
+<div class="bg-shape shape-circle"></div>
+<div class="bg-shape shape-triangle"></div>
+<div class="bg-shape shape-cross">+</div>
+
+<div class="container">
+    <div class="trophy-icon"><i class="fas fa-trophy"></i></div>
+    <h1>恭喜完成所有單元！</h1>
+    <p class="subtitle">你已經掌握了孟德爾的遺傳奧秘，現在，選擇一個戰場證明你的實力吧！</p>
+
+    <div class="button-grid">
+        <!-- Button 1 -->
+        <div class="k-btn" onclick="triggerKahoot(1)">
+            <div class="kahoot-logo">K!</div>
+            <div class="btn-title">基礎挑戰</div>
+            <div class="btn-desc">觀念複習</div>
+        </div>
+
+        <!-- Button 2 -->
+        <div class="k-btn" onclick="triggerKahoot(2)">
+            <div class="kahoot-logo">K!</div>
+            <div class="btn-title">基礎挑戰</div>
+            <div class="btn-desc">觀念複習</div>
+        </div>
+
+        <!-- Button 3 -->
+        <div class="k-btn" onclick="triggerKahoot(3)">
+            <div class="kahoot-logo">K!</div>
+            <div class="btn-title">基礎挑戰</div>
+            <div class="btn-desc">觀念複習</div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // ==========================================
+    // ▼▼▼ 請在這裡設定您的 Kahoot 連結 ▼▼▼
+    // ==========================================
+    const KAHOOT_LINKS = {
+        1: "https://create.kahoot.it/share/1/00000000", // 連結 1
+        2: "https://create.kahoot.it/share/2/00000000", // 連結 2
+        3: "https://create.kahoot.it/share/3/00000000"  // 連結 3
+    };
+    // ==========================================
+
+    function triggerKahoot(level) {
+        // 1. 觸發全螢幕按讚動畫
+        spawnLikes();
+
+        // 2. 觸發彩帶
+        spawnConfetti();
+
+        // 3. 延遲開啟連結 (2秒後，讓動畫跑一下)
+        setTimeout(() => {
+            const url = KAHOOT_LINKS[level];
+            if (url && url !== "") {
+                window.open(url, '_blank');
+            } else {
+                alert("連結尚未設定！請老師在程式碼中填入 Kahoot 網址。");
+            }
+        }, 2000); 
+    }
+
+    function spawnLikes() {
+        const count = 60; // 讚的數量
+        
+        for (let i = 0; i < count; i++) {
+            const icon = document.createElement('i');
+            icon.classList.add('fas', 'fa-thumbs-up', 'like-particle');
+            
+            // 隨機水平位置
+            const leftPos = Math.random() * 100;
+            icon.style.left = leftPos + 'vw';
+            
+            // 隨機飄移量
+            const drift = (Math.random() - 0.5) * 100 + 'px';
+            icon.style.setProperty('--drift', drift);
+            
+            // 隨機旋轉
+            const rotation = (Math.random() - 0.5) * 60 + 'deg';
+            icon.style.setProperty('--rot', rotation);
+            
+            // 隨機大小
+            const scale = 0.8 + Math.random() * 1.5;
+            icon.style.fontSize = (24 * scale) + 'px';
+            
+            // 隨機顏色 (Kahoot 4 色)
+            const colors = ['#e21b3c', '#1368ce', '#ffa602', '#26890c']; 
+            icon.style.color = colors[Math.floor(Math.random() * colors.length)];
+            
+            // 隨機動畫時間 (慢一點消失: 2.5 ~ 4.5秒)
+            const duration = 2.5 + Math.random() * 2; 
+            const delay = Math.random() * 1.5; 
+            
+            icon.style.animation = `likeFloatUp ${duration}s ease-out forwards ${delay}s`;
+
+            document.body.appendChild(icon);
+
+            setTimeout(() => {
+                icon.remove();
+            }, (duration + delay + 1) * 1000);
+        }
+    }
+
+    function spawnConfetti() {
+        const colors = ['#e21b3c', '#1368ce', '#ffa602', '#26890c']; // Kahoot colors
+        for(let i=0; i<60; i++) {
+            const c = document.createElement('div');
+            c.className = 'confetti';
+            c.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+            c.style.left = Math.random() * 100 + 'vw';
+            c.style.top = -10 + 'px';
+            c.style.animationDuration = (Math.random() * 2 + 2) + 's';
+            c.style.opacity = Math.random();
+            document.body.appendChild(c);
+            
+            setTimeout(() => c.remove(), 4000);
+        }
+    }
+
+    // 初始化背景裝飾
+    window.onload = function() {
+        setInterval(() => {
+            const c = document.createElement('div');
+            c.className = 'confetti';
+            c.style.backgroundColor = 'rgba(255,255,255,0.2)'; 
+            c.style.width = '6px';
+            c.style.height = '6px';
+            c.style.left = Math.random() * 100 + 'vw';
+            c.style.top = -10 + 'px';
+            c.style.animationDuration = (Math.random() * 5 + 3) + 's';
+            c.style.zIndex = '0';
+            document.body.appendChild(c);
+            setTimeout(() => c.remove(), 8000);
+        }, 300);
+    }
+</script>
+
+</body>
+</html>
