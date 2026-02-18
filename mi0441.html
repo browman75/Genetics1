@@ -801,69 +801,64 @@
 
     function startMission(idx) {
         currentMissionIdx = idx;
-        const m = missions[idx]; // 確保您的 missions 資料陣列存在
+        const m = missions[idx];
         
-        // 1. 更新標題與說明
+        // 1. 更新標題
         const titleEl = document.getElementById('mission-title');
         if(titleEl) titleEl.innerText = `任務 ${idx+1}/6：${m.p}`;
         
+        // 更新說明文字
         const instructionEl = document.getElementById('ch-instruction');
         if(instructionEl) {
-            // 使用 m.genes.join(', ') 顯示親代，例如 T, T, t, t
-            instructionEl.innerHTML = `請拖曳親代基因填滿表格 (親代：<span id="parents-text">${m.genes.join(', ')}</span>)`;
+            instructionEl.innerHTML = `請直接從 <b style="color:#d32f2f;">上方與左方</b> 的親代基因卡，拖曳字母填滿中間的格子`;
         }
+
+        // 2. ★ 隱藏下方的供應區 (因為不需要了)
+        const sourceContainer = document.getElementById('ch-source');
+        if(sourceContainer) sourceContainer.style.display = 'none';
         
-        // 2. 清空棋盤 (這會把格子變成空的虛線框)
+        // 3. 重置棋盤
         resetChallengeGrid();
         
-        // ===============================================
-        // ★ 自動填寫親代基因 (請加入這段邏輯)
-        // ===============================================
+        // 4. 自動填寫親代基因，並設定為「可拖曳」
         if (m && m.genes && m.genes.length >= 4) {
-            // 資料結構 m.genes 通常是 [Top1, Top2, Left1, Left2]
-            
-            // --- 設定上方 (Top) ---
-            const t1 = document.getElementById('ch-top-1');
-            const t2 = document.getElementById('ch-top-2');
-            
-            if (t1) { 
-                t1.innerText = m.genes[0];          // 填入文字
-                t1.classList.remove('target-zone'); // 移除虛線框樣式
-                t1.classList.add('filled');         // 加入已填寫樣式
-                t1.style.pointerEvents = 'none';    // ★ 關鍵：鎖定它，不讓使用者操作
-            }
-            if (t2) { 
-                t2.innerText = m.genes[1]; 
-                t2.classList.remove('target-zone'); 
-                t2.classList.add('filled'); 
-                t2.style.pointerEvents = 'none';
-            }
+            // 設定上方 (Top)
+            setupHeaderAsDraggable('ch-top-1', m.genes[0]);
+            setupHeaderAsDraggable('ch-top-2', m.genes[1]);
 
-            // --- 設定左方 (Left) ---
-            const l1 = document.getElementById('ch-left-1');
-            const l2 = document.getElementById('ch-left-2');
-            
-            if (l1) { 
-                l1.innerText = m.genes[2]; 
-                l1.classList.remove('target-zone'); 
-                l1.classList.add('filled'); 
-                l1.style.pointerEvents = 'none';
-            }
-            if (l2) { 
-                l2.innerText = m.genes[3]; 
-                l2.classList.remove('target-zone'); 
-                l2.classList.add('filled'); 
-                l2.style.pointerEvents = 'none';
-            }
+            // 設定左方 (Left)
+            setupHeaderAsDraggable('ch-left-1', m.genes[2]);
+            setupHeaderAsDraggable('ch-left-2', m.genes[3]);
 
-            // --- ★ 解鎖中間的格子 (因為親代已經自動填好，中間要直接開放) ---
+            // 解鎖中間格子
             const centerCells = document.querySelectorAll('.c-cell');
             centerCells.forEach(cell => {
-                cell.classList.remove('locked');    // 移除鎖定外觀
-                cell.style.pointerEvents = 'auto';  // 確保可以接收拖曳
-                // 如果您希望中間格子看起來像放置區，可以加這行 (看您的 CSS 設計)
-                // cell.classList.add('target-zone'); 
+                cell.classList.remove('locked');
+                cell.style.pointerEvents = 'auto';
+                cell.classList.add('target-zone');
             });
+        }
+    }
+
+    // 輔助函式：把標題格子設定成「可以拖曳的來源」
+    function setupHeaderAsDraggable(id, text) {
+        const el = document.getElementById(id);
+        if(el) {
+            el.innerText = text;
+            el.classList.remove('target-zone');
+            el.classList.add('filled');
+            
+            // ★ 關鍵設定：讓它變成可拖曳的來源
+            el.setAttribute('draggable', 'true'); 
+            el.style.pointerEvents = 'auto'; // 允許操作
+            el.style.cursor = 'grab';        // 滑鼠游標變成手掌
+            el.style.backgroundColor = '#fff3e0'; // 視覺區隔
+            
+            // 電腦版拖曳支援 (手機版靠下方的觸控程式)
+            el.ondragstart = function(ev) {
+                ev.dataTransfer.setData("text", text);
+                ev.dataTransfer.effectAllowed = "copy"; // 設為複製模式
+            };
         }
     }
 
@@ -952,6 +947,112 @@
     const styleSheet = document.createElement("style");
     styleSheet.innerText = `@keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(107, 142, 35, 0.4); } 70% { box-shadow: 0 0 0 10px rgba(107, 142, 35, 0); } 100% { box-shadow: 0 0 0 0 rgba(107, 142, 35, 0); } }`;
     document.head.appendChild(styleSheet);
+
+// ==========================================
+// ★ iPad/平板 觸控拖曳終極修復程式 (動態偵測版)
+// ==========================================
+(function() {
+    let dragGhost = null;
+    let dragOffsetX = 0;
+    let dragOffsetY = 0;
+    let currentDragSource = null;
+
+    // ★ 改用 document 監聽，這樣後來才變成 draggable 的物件也能被偵測到
+    document.addEventListener('touchstart', handleTouchStart, {passive: false});
+    document.addEventListener('touchmove', handleTouchMove, {passive: false});
+    document.addEventListener('touchend', handleTouchEnd, {passive: false});
+
+    function handleTouchStart(e) {
+        const touch = e.touches[0];
+        // 檢查被按到的東西（或它的父層）是不是 draggable="true"
+        const target = e.target.closest('[draggable="true"]');
+        
+        if (!target) return; // 如果按到的不是可拖曳物件，就不理會
+
+        // 禁止畫面捲動
+        if (e.cancelable) e.preventDefault();
+        
+        currentDragSource = target;
+
+        // 製作分身
+        dragGhost = target.cloneNode(true);
+        dragGhost.style.position = 'fixed';
+        dragGhost.style.zIndex = '99999';
+        dragGhost.style.opacity = '0.8';
+        dragGhost.style.pointerEvents = 'none'; 
+        dragGhost.style.transform = 'scale(1.1)';
+        dragGhost.style.border = '2px solid #6B8E23'; // 加個邊框比較明顯
+        
+        const rect = target.getBoundingClientRect();
+        dragOffsetX = touch.clientX - rect.left;
+        dragOffsetY = touch.clientY - rect.top;
+        
+        dragGhost.style.left = (touch.clientX - dragOffsetX) + 'px';
+        dragGhost.style.top = (touch.clientY - dragOffsetY) + 'px';
+        dragGhost.style.width = rect.width + 'px';
+        dragGhost.style.height = rect.height + 'px';
+
+        document.body.appendChild(dragGhost);
+    }
+
+    function handleTouchMove(e) {
+        if (!dragGhost) return;
+        if (e.cancelable) e.preventDefault();
+        
+        const touch = e.touches[0];
+        dragGhost.style.left = (touch.clientX - dragOffsetX) + 'px';
+        dragGhost.style.top = (touch.clientY - dragOffsetY) + 'px';
+    }
+
+    function handleTouchEnd(e) {
+        if (!dragGhost) return;
+
+        dragGhost.remove();
+        dragGhost = null;
+
+        const touch = e.changedTouches[0];
+        let targetElem = document.elementFromPoint(touch.clientX, touch.clientY);
+        
+        if (!targetElem) return;
+
+        // 尋找放置區
+        let dropZone = targetElem.closest('[ondrop]') || targetElem.closest('.drop-zone') || targetElem.closest('.c-cell');
+
+        if (dropZone && currentDragSource) {
+            // 抓取文字
+            const dataText = currentDragSource.innerText;
+            const dataId = currentDragSource.id;
+
+            // 偽造 Event
+            const mockEvent = {
+                preventDefault: () => {},
+                stopPropagation: () => {},
+                target: dropZone,
+                dataTransfer: {
+                    getData: (type) => {
+                        if (type === 'text') return dataText;
+                        if (type === 'sourceId') return dataId;
+                        return '';
+                    }
+                }
+            };
+
+            // 執行放置
+            const onDropAttr = dropZone.getAttribute('ondrop');
+            if (onDropAttr) {
+                if (onDropAttr.includes('dropGenotype') && typeof window.dropGenotype === 'function') {
+                    window.dropGenotype(mockEvent);
+                } else if (onDropAttr.includes('drop') && typeof window.drop === 'function') {
+                    window.drop(mockEvent);
+                }
+            } else if (dropZone.classList.contains('c-cell')) {
+                 // 如果該格子沒有寫 ondrop 但它是目標格 (防呆)
+                 if(typeof window.drop === 'function') window.drop(mockEvent);
+            }
+        }
+        currentDragSource = null;
+    }
+})();
     
 </script>
 </body>
