@@ -900,118 +900,121 @@
     styleSheet.innerText = `@keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(107, 142, 35, 0.4); } 70% { box-shadow: 0 0 0 10px rgba(107, 142, 35, 0); } 100% { box-shadow: 0 0 0 0 rgba(107, 142, 35, 0); } }`;
     document.head.appendChild(styleSheet);
 
-    // ==========================================
-    // ★ iPad/手機 觸控拖曳修補程式 (改良版 v2)
-    // ==========================================
-    
-    // 1. 變數準備
-    let touchGhost = null;     // 跟著手指跑的影子
-    let touchOffsetX = 0;
-    let touchOffsetY = 0;
-    let draggedText = "";      // 紀錄直接抓到的文字 (T 或 t)
-    let draggedSourceId = "";  // 紀錄來源 ID (給 Section 5 用)
+<script>
+// ==========================================
+// ★ iPad/平板 觸控拖曳終極修復程式 (v3.0)
+// ==========================================
+(function() {
+    // 變數準備
+    let dragGhost = null;       // 跟隨手指的分身
+    let dragSource = null;      // 被拖曳的原始物件
+    let dragOffsetX = 0;
+    let dragOffsetY = 0;
 
-    // 2. 啟動觸控監聽 (頁面載入後執行)
-    setTimeout(function() {
-        // 抓取所有可以拖曳的物件
-        const allDraggables = document.querySelectorAll('[draggable="true"]');
-        allDraggables.forEach(el => {
+    // 頁面載入後啟動監聽
+    setTimeout(() => {
+        const draggables = document.querySelectorAll('[draggable="true"]');
+        draggables.forEach(el => {
             el.addEventListener('touchstart', handleTouchStart, {passive: false});
             el.addEventListener('touchmove', handleTouchMove, {passive: false});
             el.addEventListener('touchend', handleTouchEnd, {passive: false});
         });
-    }, 1000); // 延遲 1 秒確保畫面物件都準備好了
+    }, 500);
 
     function handleTouchStart(e) {
+        // 1. 禁止畫面捲動
         if (e.cancelable) e.preventDefault();
         
-        const target = e.currentTarget;
-        
-        // ★ 改良點 1：直接抓取卡片上的文字，不依賴 ID 尋找
-        draggedText = target.innerText; 
-        draggedSourceId = target.id; // 順便記下 ID (如果有的話)
-
-        // 製作分身 (Ghost)
-        touchGhost = target.cloneNode(true);
-        touchGhost.style.position = 'fixed';
-        touchGhost.style.zIndex = '9999';
-        touchGhost.style.opacity = '0.8';
-        touchGhost.style.transform = 'scale(1.2)'; // 稍微放大讓使用者看清楚
-        
-        // ★ 關鍵：讓分身「無法被點擊」，這樣手指才能穿透它偵測到底下的圈圈
-        touchGhost.style.pointerEvents = 'none'; 
-        
-        const rect = target.getBoundingClientRect();
         const touch = e.touches[0];
-        touchOffsetX = touch.clientX - rect.left;
-        touchOffsetY = touch.clientY - rect.top;
+        dragSource = e.currentTarget;
+
+        // 2. 製作分身 (Ghost)
+        dragGhost = dragSource.cloneNode(true);
+        dragGhost.style.position = 'fixed';
+        dragGhost.style.zIndex = '99999';
+        dragGhost.style.opacity = '0.8';
+        dragGhost.style.pointerEvents = 'none'; // ★關鍵：讓分身完全透明，不阻擋偵測
+        dragGhost.style.transform = 'scale(1.1)'; // 放大一點讓手指看得清楚
         
-        touchGhost.style.left = (touch.clientX - touchOffsetX) + 'px';
-        touchGhost.style.top = (touch.clientY - touchOffsetY) + 'px';
-        touchGhost.style.width = rect.width + 'px'; 
+        // 設定分身初始位置
+        const rect = dragSource.getBoundingClientRect();
+        dragOffsetX = touch.clientX - rect.left;
+        dragOffsetY = touch.clientY - rect.top;
         
-        document.body.appendChild(touchGhost);
+        dragGhost.style.left = (touch.clientX - dragOffsetX) + 'px';
+        dragGhost.style.top = (touch.clientY - dragOffsetY) + 'px';
+        dragGhost.style.width = rect.width + 'px';
+        dragGhost.style.height = rect.height + 'px'; // 鎖定高度以免跑版
+
+        document.body.appendChild(dragGhost);
     }
 
     function handleTouchMove(e) {
-        if (!touchGhost) return;
+        if (!dragGhost) return;
         if (e.cancelable) e.preventDefault();
+        
         const touch = e.touches[0];
-        touchGhost.style.left = (touch.clientX - touchOffsetX) + 'px';
-        touchGhost.style.top = (touch.clientY - touchOffsetY) + 'px';
+        // 更新分身位置
+        dragGhost.style.left = (touch.clientX - dragOffsetX) + 'px';
+        dragGhost.style.top = (touch.clientY - dragOffsetY) + 'px';
     }
 
     function handleTouchEnd(e) {
-        if (!touchGhost) return;
-        touchGhost.remove();
-        touchGhost = null;
+        if (!dragGhost) return;
 
+        // 1. 立刻移除分身，確保不擋路
+        dragGhost.remove();
+        dragGhost = null;
+
+        // 2. 偵測手指放開點底下的元素
         const touch = e.changedTouches[0];
         
-        // 1. 偵測手指位置底下的元件
-        let elemBelow = document.elementFromPoint(touch.clientX, touch.clientY);
-        if (!elemBelow) return;
+        // 先暫時隱藏分身(雖已remove但保險起見)，取得座標點下的元素
+        let targetElem = document.elementFromPoint(touch.clientX, touch.clientY);
+        
+        if (!targetElem) return;
 
-        // ★ 改良點 2：擴大偵測範圍
-        // 只要底下那個東西有 class="drop-zone" 或者有 ondrop 屬性，都視為目標
-        let dropTarget = elemBelow.closest('.drop-zone') || elemBelow.closest('[ondrop]');
+        // 3. 往上找，看是不是合法的放置區 (有 ondrop 屬性或是 .drop-zone)
+        let dropZone = targetElem.closest('[ondrop]') || targetElem.closest('.drop-zone');
 
-        if (dropTarget) {
-            // 2. 偽造一個 Event 物件
+        if (dropZone && dragSource) {
+            // 4. 準備資料：模擬原本 dragstart 會帶的資料
+            // 您的程式碼主要依賴 innerText (文字) 和 id (來源ID)
+            const dataText = dragSource.innerText;
+            const dataId = dragSource.id;
+
+            // 5. 偽造 Event 物件
             const mockEvent = {
                 preventDefault: () => {},
                 stopPropagation: () => {},
-                target: dropTarget, // 告訴程式碼我們放到了這個圈圈上
+                target: dropZone, // 告訴程式這是目標
                 dataTransfer: {
-                    getData: (key) => {
-                        // 根據程式要的資料回傳我們剛剛存好的
-                        if (key === "text") return draggedText;
-                        if (key === "sourceId") return draggedSourceId;
-                        return "";
+                    getData: (type) => {
+                        if (type === 'text') return dataText;
+                        if (type === 'sourceId') return dataId;
+                        return '';
                     }
                 }
             };
 
-            // 3. 判斷要執行哪一個函式
-            // 讀取 HTML 上的 ondrop="..." 屬性
-            const onDropAttr = dropTarget.getAttribute('ondrop');
+            // 6. 執行對應的函式
+            // 讀取 HTML 屬性看它原本要呼叫誰 (drop(event) 還是 dropGenotype(event))
+            const onDropAttr = dropZone.getAttribute('ondrop');
             
             if (onDropAttr) {
-                // 如果是 Section 5 (最後一關)，通常是用 dropGenotype
-                if (onDropAttr.includes('dropGenotype') && typeof dropGenotype === 'function') {
-                    dropGenotype(mockEvent);
-                } 
-                // 其他關卡通常是用 drop
-                else if (typeof drop === 'function') {
-                    drop(mockEvent);
+                if (onDropAttr.includes('dropGenotype') && typeof window.dropGenotype === 'function') {
+                    window.dropGenotype(mockEvent);
+                } else if (onDropAttr.includes('drop') && typeof window.drop === 'function') {
+                    window.drop(mockEvent);
                 }
             }
         }
         
-        // 清空暫存
-        draggedText = "";
-        draggedSourceId = "";
+        // 重置
+        dragSource = null;
     }
+})();
+</script>
 </script>
 </body>
 </html>
