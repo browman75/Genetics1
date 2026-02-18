@@ -447,12 +447,12 @@
         <div class="punnett-workspace" id="workspace-tutorial">
             <div class="step-indicator" id="step-label-tut">步驟 1：填入配子</div>
             <div class="instruction-banner" id="tut-instruction">
-                <i class="fas fa-hand-pointer"></i> 請按住下方的配子 (T, t)，將其<b>拖曳</b>到表格外側的圓框中。
+                <i class="fas fa-hand-pointer"></i> 請點選下方的配子 (T, t)，再<b>點選</b>到表格外側的圓框中。
             </div>
             
             <div class="grid-wrapper">
                 <!-- R1 -->
-                <div class="corner-label">精子&#8594;<br>卵子&#8595;</div>
+                <div class="corner-label">配子&#8594;<br>配子&#8595;</div>
                 <div class="header-cell target-zone t-zone" id="tut-top-1" data-pos="top" data-idx="1" data-expect="T"></div>
                 <div class="header-cell target-zone t-zone" id="tut-top-2" data-pos="top" data-idx="2" data-expect="t"></div>
                 
@@ -499,33 +499,13 @@
         </div>
     </section>
 
-        <!-- Summary Table -->
-        <div class="summary-section">
-            <h3><i class="fas fa-clipboard-list"></i> 實驗紀錄表</h3>
-            <table id="summary-table">
-                <thead>
-                    <tr>
-                        <th width="20%">親代組合</th>
-                        <th width="20%">棋盤方格</th>
-                        <th width="30%">子代基因型<br>(TT:Tt:tt)</th>
-                        <th width="30%">子代表現型<br>(高:矮)</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <!-- Rows will be added here -->
-                </tbody>
-            </table>
-        </div>
-
-    </section>
 
     <!-- Navigation Confirmation Modal -->
     <div id="nav-modal" class="nav-modal">
         <div class="nav-modal-content">
-            <h3 style="color:var(--earth-brown);"><i class="fas fa-clipboard-check"></i> 學習單檢查</h3>
-            <p style="font-size:1.2em; margin: 20px 0;">請問你是否已經將實驗結果<br>完整記錄在學習單上了呢？</p>
+            <h3 style="color:var(--earth-brown);"><i class="fas fa-clipboard-check"></i> 再複習一次</h3>
+            <p style="font-size:1.2em; margin: 20px 0;">上方及左方填入遺傳因子組合的一個<br>再將上方因子向下移動，左方因子向右移動組合</p>
             <div class="nav-modal-options">
-                <button class="action-btn" onclick="closeNavModal()" style="background:#999;">尚未完成 (返回)</button>
                 <button class="action-btn" onclick="proceedToNextLevel()">已經完成 (前往下一關)</button>
             </div>
         </div>
