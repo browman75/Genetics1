@@ -1,0 +1,903 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>孟德爾的遺傳法則：解開遺傳密碼</title>
+    
+    <!-- 引入 Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- 引入 Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;700&family=Comfortaa:wght@700&display=swap" rel="stylesheet">
+
+    <style>
+        :root {
+            --primary-green: #6B8E23; /* 橄欖綠 */
+            --light-green: #F0FFF0;   /* 蜜瓜綠 */
+            --earth-brown: #8B4513;   /* 土壤色 */
+            --text-color: #333333;
+            --correct-color: #4CAF50;
+            --wrong-color: #e74c3c;
+            --disabled-gray: #ccc;
+            --highlight-yellow: #FFF9C4;
+            --gene-bg: #e8f5e9;
+            --gene-border: #2e7d32;
+        }
+
+        body {
+            font-family: 'Noto Sans TC', sans-serif;
+            background-color: #fcfbf4;
+            color: var(--text-color);
+            margin: 0;
+            padding: 20px;
+            line-height: 1.8;
+            font-size: 18px;
+            overscroll-behavior: none;
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            background-color: white;
+            padding: 30px;
+            border-radius: 20px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+            border: 2px solid #e0e0e0;
+        }
+
+        /* Header */
+        header {
+            text-align: center;
+            border-bottom: 3px solid var(--primary-green);
+            padding-bottom: 20px;
+            margin-bottom: 30px;
+        }
+
+        h1 {
+            color: var(--primary-green);
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+
+        .subtitle {
+            font-size: 1.2em;
+            color: #666;
+        }
+
+        /* Sections */
+        section {
+            margin-bottom: 40px;
+            padding: 25px;
+            background-color: var(--light-green);
+            border-radius: 15px;
+            border-left: 8px solid var(--primary-green);
+            position: relative;
+            transition: all 0.5s;
+        }
+
+        section.locked {
+            opacity: 0.5;
+            pointer-events: none;
+            filter: grayscale(0.8);
+        }
+
+        h2 {
+            color: var(--earth-brown);
+            display: flex;
+            align-items: center;
+            font-size: 1.8em;
+            margin-top: 0;
+        }
+
+        h2 i { margin-right: 15px; color: var(--primary-green); }
+
+        /* Rule Cards with Interaction */
+        .rules-grid {
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+            margin-top: 20px;
+        }
+
+        .rule-card {
+            flex: 1;
+            min-width: 280px;
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            border: 2px solid #ddd;
+            text-align: center;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+        
+        .rule-card.done {
+            border-color: var(--correct-color);
+            background-color: #f1f8e9;
+        }
+
+        .rule-icon { font-size: 2.5em; color: var(--earth-brown); margin-bottom: 10px; }
+        .rule-title { font-weight: bold; color: var(--primary-green); margin-bottom: 10px; font-size: 1.2em; }
+        
+        .quiz-area {
+            margin-top: 15px;
+            padding-top: 15px;
+            border-top: 1px dashed #ccc;
+        }
+        
+        .quiz-options {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            margin-top: 10px;
+        }
+        
+        .mini-btn {
+            background: #eee;
+            border: 1px solid #ccc;
+            padding: 5px 15px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 0.9em;
+            transition: all 0.2s;
+        }
+        
+        .mini-btn:hover { background: #e0e0e0; }
+        .mini-btn.correct { background: var(--correct-color); color: white; border-color: var(--correct-color); }
+        .mini-btn.wrong { background: var(--wrong-color); color: white; border-color: var(--wrong-color); }
+
+        /* Section 2: Segregation Drag & Drop */
+        .cell-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 50px;
+            margin: 30px 0;
+            position: relative;
+        }
+        
+        .parent-cell {
+            width: 100px; height: 100px;
+            border: 3px solid #555;
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background: white;
+            position: relative;
+        }
+        
+        .gamete-target {
+            width: 80px; height: 80px;
+            border: 2px dashed #999;
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background: rgba(255,255,255,0.5);
+            transition: all 0.3s;
+        }
+        
+        .gamete-target.hovered { background: #e8f5e9; border-color: var(--primary-green); transform: scale(1.1); }
+        .gamete-target.filled { border-style: solid; border-color: var(--primary-green); background: white; }
+
+        .gene-draggable {
+            width: 40px; height: 40px;
+            background: var(--primary-green);
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-family: 'Comfortaa', cursive;
+            font-weight: bold;
+            font-size: 1.2em;
+            cursor: grab;
+            position: absolute;
+            z-index: 10;
+            touch-action: none;
+        }
+        
+        .arrow-split {
+            font-size: 3em; color: #ccc; position: absolute; left: 120px;
+        }
+
+        /* --- Section 3: Diagram & Interaction --- */
+        .diagram-container {
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            border: 3px dashed #ccc;
+        }
+
+        .organism {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin: 0 20px;
+            transition: all 0.5s;
+        }
+
+        .pea-visual {
+            font-size: 2.5em;
+            color: var(--primary-green);
+            margin-bottom: 5px;
+        }
+        
+        .short-visual {
+            font-size: 1.5em;
+            margin-top: 15px;
+        }
+
+        .gene-box {
+            font-family: 'Comfortaa', cursive;
+            font-weight: bold;
+            font-size: 1.2em;
+            padding: 5px 15px;
+            border: 2px solid #ccc;
+            border-radius: 10px;
+            background: #fff;
+            min-width: 60px;
+            text-align: center;
+        }
+
+        /* Interaction Zone */
+        .interaction-zone {
+            background: #f9fbe7;
+            border: 2px solid #c0ca33;
+            border-radius: 15px;
+            padding: 20px;
+            width: 100%;
+            text-align: center;
+            margin-top: 20px;
+            margin-bottom: 20px;
+        }
+
+        .parents-display {
+            display: flex;
+            justify-content: center;
+            gap: 100px;
+            margin-bottom: 30px;
+        }
+
+        .parent-selector {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .gene-btn-group {
+            display: flex;
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .gene-select-btn {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            border: 2px solid var(--primary-green);
+            background: white;
+            font-family: 'Comfortaa', cursive;
+            font-size: 1.2em;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .gene-select-btn:hover { background: #e8f5e9; transform: scale(1.1); }
+        .gene-select-btn.selected { background: var(--primary-green); color: white; transform: scale(1.1); box-shadow: 0 0 10px rgba(107, 142, 35, 0.5); }
+
+        .results-grid {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+
+        .result-slot {
+            width: 100px;
+            height: 140px;
+            border: 3px dashed #ccc;
+            border-radius: 10px;
+            background: white;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            opacity: 0.7;
+            transition: all 0.5s;
+        }
+
+        .result-slot.filled {
+            border-style: solid;
+            border-color: var(--primary-green);
+            opacity: 1;
+            background: #fff;
+        }
+        
+        .row-label {
+            background: var(--earth-brown);
+            color: white;
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 0.9em;
+            font-weight: bold;
+            display: inline-block;
+            margin-bottom: 15px;
+        }
+
+        .arrow-down { font-size: 2em; color: #ccc; margin: 20px 0; display: block; }
+
+        /* Phenotype Check Modal */
+        .pheno-modal {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.6);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 2000;
+            display: none; /* Initially hidden */
+        }
+
+        .pheno-content {
+            background: white;
+            padding: 30px;
+            border-radius: 20px;
+            text-align: center;
+            max-width: 400px;
+            width: 90%;
+            border: 5px solid var(--primary-green);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+            animation: pop 0.3s;
+        }
+
+        .pheno-genotype-display {
+            font-size: 3em;
+            font-family: 'Comfortaa', cursive;
+            color: var(--earth-brown);
+            margin: 10px 0;
+            font-weight: bold;
+        }
+
+        .pheno-options {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            margin-top: 20px;
+        }
+
+        .pheno-btn {
+            background: #eee;
+            border: 2px solid #ccc;
+            padding: 15px 10px;
+            border-radius: 15px;
+            cursor: pointer;
+            width: 45%;
+            transition: all 0.2s;
+            font-weight: bold;
+            font-size: 1.1em;
+        }
+
+        .pheno-btn:hover { background: #e0e0e0; transform: translateY(-3px); }
+        .pheno-btn.correct { background: var(--correct-color); color: white; border-color: var(--correct-color); }
+        .pheno-btn.wrong { background: var(--wrong-color); color: white; border-color: var(--wrong-color); }
+
+        /* Nav */
+        .action-btn {
+            background-color: var(--earth-brown); color: white; border: none; padding: 10px 25px; border-radius: 50px; font-size: 1.1em; cursor: pointer; transition: all 0.3s; margin-top: 20px;
+        }
+        .footer-nav { text-align: center; margin-top: 50px; padding-top: 20px; border-top: 2px solid #eee; }
+        .next-btn { display: inline-block; background-color: var(--primary-green); color: white; padding: 15px 40px; font-size: 1.5em; border-radius: 50px; text-decoration: none; box-shadow: 0 5px 15px rgba(107, 142, 35, 0.4); transition: all 0.3s; border: none; cursor: pointer; opacity: 0.5; pointer-events: none; }
+        .next-btn.active { opacity: 1; pointer-events: auto; background-color: #556B2F; }
+
+        /* Animations */
+        @keyframes pop { 0% { transform: scale(0.5); } 100% { transform: scale(1); } }
+        @keyframes shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-5px); } 75% { transform: translateX(5px); } }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        .hidden { display: none !important; }
+
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <header>
+        <h1><i class="fas fa-dna"></i> 孟德爾的遺傳實驗室</h1>
+        <div class="subtitle">單元三：解開遺傳密碼</div>
+    </header>
+
+    <!-- Part 1: 建立規則 (互動化) -->
+    <section id="section-rules">
+        <h2><i class="fas fa-gavel"></i> 1. 建立分析規則</h2>
+        <p>孟德爾為了分析實驗結果，發明了一套符號系統。請完成以下三個小挑戰來建立規則：</p>
+        
+        <div class="rules-grid">
+            <!-- Rule 1 -->
+            <div class="rule-card" id="card-rule1">
+                <div>
+                    <div class="rule-icon"><i class="fas fa-font"></i></div>
+                    <div class="rule-title">規則一：字母代號</div>
+                    <p style="font-size:0.9em;">顯性用大寫 (T)，隱性用小寫 (t)。</p>
+                </div>
+                <div class="quiz-area">
+                    <p><b>Q:</b> 「矮莖」是隱性，代號應為？</p>
+                    <div class="quiz-options">
+                        <button class="mini-btn" onclick="checkRule(1, 'T', this)">T</button>
+                        <button class="mini-btn" onclick="checkRule(1, 't', this)">t</button>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Rule 2 -->
+            <div class="rule-card" id="card-rule2">
+                <div>
+                    <div class="rule-icon"><i class="fas fa-user-friends"></i></div>
+                    <div class="rule-title">規則二：成對存在</div>
+                    <p style="font-size:0.9em;">體細胞中，遺傳因子是成對的。</p>
+                </div>
+                <div class="quiz-area">
+                    <p><b>Q:</b> 下列何者是正確的基因型寫法？</p>
+                    <div class="quiz-options">
+                        <button class="mini-btn" onclick="checkRule(2, 'T', this)">T</button>
+                        <button class="mini-btn" onclick="checkRule(2, 'TT', this)">TT</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Rule 3 -->
+            <div class="rule-card" id="card-rule3">
+                <div>
+                    <div class="rule-icon"><i class="fas fa-eye"></i></div>
+                    <div class="rule-title">規則三：顯性法則</div>
+                    <p style="font-size:0.9em;">只要有顯性 (T) 存在，就表現顯性。</p>
+                </div>
+                <div class="quiz-area">
+                    <p><b>Q:</b> 基因型 <b>Tt</b> 的豌豆長怎樣？</p>
+                    <div class="quiz-options">
+                        <button class="mini-btn" onclick="checkRule(3, 'tall', this)">高莖</button>
+                        <button class="mini-btn" onclick="checkRule(3, 'short', this)">矮莖</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div id="rule-feedback" style="text-align:center; margin-top:20px; font-weight:bold; color:var(--primary-green);"></div>
+    </section>
+
+    <!-- Part 2: 分離律 (拖曳互動) -->
+    <section id="section-gamete" class="locked">
+        <h2><i class="fas fa-cut"></i> 2. 分離律 (互動體驗)</h2>
+        <p>孟德爾假設：當生物體產生<b>配子</b>時，成對的遺傳因子會<b>分離</b>。請試著將親代的基因<b>拖曳</b>到配子中！</p>
+        
+        <div class="cell-container">
+            <!-- Parent Cell -->
+            <div class="parent-cell">
+                <span style="position:absolute; top:-30px; font-weight:bold;">親代細胞 (Tt)</span>
+                <!-- Draggable Genes -->
+                <div class="gene-draggable" id="gene-T" style="left:15px;" draggable="true">T</div>
+                <div class="gene-draggable" id="gene-t" style="right:15px; background:#81c784;" draggable="true">t</div>
+            </div>
+            
+            <div class="arrow-split"><i class="fas fa-long-arrow-alt-right"></i></div>
+            
+            <!-- Gametes -->
+            <div style="display:flex; flex-direction:column; gap:20px;">
+                <div class="gamete-target" id="gamete-1" data-target="any">
+                    <span style="font-size:0.8em; color:#999;">配子 1</span>
+                </div>
+                <div class="gamete-target" id="gamete-2" data-target="any">
+                    <span style="font-size:0.8em; color:#999;">配子 2</span>
+                </div>
+            </div>
+        </div>
+        <div id="gamete-feedback" style="text-align:center; font-weight:bold;"></div>
+    </section>
+
+    <!-- Part 3: 遺傳圖譜重現 (修正版 - 完整互動) -->
+    <section id="section-diagram" class="locked">
+        <h2><i class="fas fa-project-diagram"></i> 3. 修復遺傳圖譜：重現分析過程</h2>
+        <p>請依照課本第41頁的邏輯，透過「組合基因」並「判斷表徵」來完成下方的遺傳分析圖。</p>
+        
+        <div class="diagram-container">
+            
+            <!-- STEP 1: P -> F1 Interaction (Manual 4 Combinations) -->
+            <div class="interaction-zone" id="p-f1-zone">
+                <h3 style="color:#556B2F; margin-top:0;">親代雜交 (P × P)</h3>
+                <p>請從父母方各選一個基因，組合出所有可能的 F1 子代！(需找出 4 種組合)</p>
+                
+                <div class="parents-display">
+                    <div class="parent-selector">
+                        <i class="fas fa-seedling pea-visual"></i>
+                        <b>純種高莖 (TT)</b>
+                        <div class="gene-btn-group">
+                            <button class="gene-select-btn" onclick="selectPGene('p1', 0, 'T', this)">T</button>
+                            <button class="gene-select-btn" onclick="selectPGene('p1', 1, 'T', this)">T</button>
+                        </div>
+                    </div>
+                    
+                    <span style="font-size:2em; align-self:center;">×</span>
+                    
+                    <div class="parent-selector">
+                        <i class="fas fa-seedling pea-visual short-visual"></i>
+                        <b>純種矮莖 (tt)</b>
+                        <div class="gene-btn-group">
+                            <button class="gene-select-btn" onclick="selectPGene('p2', 0, 't', this)">t</button>
+                            <button class="gene-select-btn" onclick="selectPGene('p2', 1, 't', this)">t</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div style="height:50px;">
+                    <button id="combine-p-btn" class="action-btn" style="padding:5px 20px; font-size:1em; display:none;" onclick="combinePGenesManual()">組合！</button>
+                </div>
+
+                <div class="row-label">第一子代 (F1)</div>
+                <div class="results-grid">
+                    <!-- F1 slots -->
+                    <div class="result-slot" id="slot-p-0"><span>組合 1</span></div>
+                    <div class="result-slot" id="slot-p-1"><span>組合 2</span></div>
+                    <div class="result-slot" id="slot-p-2"><span>組合 3</span></div>
+                    <div class="result-slot" id="slot-p-3"><span>組合 4</span></div>
+                </div>
+                
+                <div id="p-feedback" style="margin-top:15px; font-weight:bold; height:30px;"></div>
+            </div>
+
+            <div class="arrow-down hidden" id="arrow-to-f2"><i class="fas fa-arrow-down"></i></div>
+
+            <!-- STEP 2: F1 -> F2 Interaction (Hidden initially) -->
+            <div class="interaction-zone hidden" id="f2-zone">
+                <h3 style="color:#556B2F; margin-top:0;">F1 自花授粉 (F1 × F1)</h3>
+                <p>請從 F1 父母方各選一個基因，組合基因型，並<b>判斷它的表徵</b>！(需找出 4 種組合)</p>
+                
+                <div class="parents-display">
+                    <!-- Parent 1 -->
+                    <div class="parent-selector">
+                        <i class="fas fa-seedling pea-visual" style="font-size:2em;"></i>
+                        <b>父方 (F1)</b>
+                        <div class="gene-btn-group">
+                            <button class="gene-select-btn" onclick="selectGene('p1', 'T', this)">T</button>
+                            <button class="gene-select-btn" onclick="selectGene('p1', 't', this)">t</button>
+                        </div>
+                    </div>
+                    
+                    <span style="font-size:2em; align-self:center;">×</span>
+                    
+                    <!-- Parent 2 -->
+                    <div class="parent-selector">
+                        <i class="fas fa-seedling pea-visual" style="font-size:2em;"></i>
+                        <b>母方 (F1)</b>
+                        <div class="gene-btn-group">
+                            <button class="gene-select-btn" onclick="selectGene('p2', 'T', this)">T</button>
+                            <button class="gene-select-btn" onclick="selectGene('p2', 't', this)">t</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="combine-btn-area" style="height:50px;">
+                    <button id="combine-btn" class="action-btn" style="padding:5px 20px; font-size:1em; display:none;" onclick="combineGenes()">組合！</button>
+                </div>
+
+                <div class="row-label">第二子代 (F2)</div>
+                <div class="results-grid">
+                    <div class="result-slot" id="slot-TT"><span>組合 1</span></div>
+                    <div class="result-slot" id="slot-Tt1"><span>組合 2</span></div>
+                    <div class="result-slot" id="slot-Tt2"><span>組合 3</span></div>
+                    <div class="result-slot" id="slot-tt"><span>組合 4</span></div>
+                </div>
+                
+                <div id="f2-feedback" style="margin-top:15px; font-weight:bold; height:30px;"></div>
+            </div>
+
+        </div>
+        
+        <!-- Summary Text -->
+        <div id="final-summary" style="display:none; text-align:center; margin-top:20px; animation:fadeIn 1s;">
+            <p style="font-size:1.2em; color:var(--primary-green); font-weight:bold;">
+                <i class="fas fa-check-circle"></i> 分析完成！<br>
+                基因型比例：1 TT : 2 Tt : 1 tt<br>
+                表現型比例：3 高莖 : 1 矮莖
+            </p>
+        </div>
+
+    </section>
+
+    <!-- Phenotype Check Modal (New) -->
+    <div id="pheno-modal" class="pheno-modal">
+        <div class="pheno-content">
+            <h3 style="color:var(--primary-green);">判斷表現型</h3>
+            <p>你組合出了以下基因型，請問它會長什麼樣子？</p>
+            <div id="pheno-display" class="pheno-genotype-display">Tt</div>
+            <div class="pheno-options">
+                <div class="pheno-btn" onclick="checkPhenotype('tall')">
+                    <i class="fas fa-seedling" style="font-size:2em; display:block; color:var(--primary-green);"></i>
+                    高莖 (顯性)
+                </div>
+                <div class="pheno-btn" onclick="checkPhenotype('short')">
+                    <i class="fas fa-seedling" style="font-size:1.5em; display:block; color:var(--primary-green); margin-top:5px;"></i>
+                    矮莖 (隱性)
+                </div>
+            </div>
+            <div id="pheno-msg" style="margin-top:15px; font-weight:bold; height:20px;"></div>
+        </div>
+    </div>
+
+    <!-- Nav -->
+    <div class="footer-nav">
+        <a href="mi044.html" class="next-btn" id="next-btn">
+            前往下一關：小小孟德爾實驗室 <i class="fas fa-arrow-right"></i>
+        </a>
+    </div>
+
+</div>
+
+<script>
+    // --- Section 1: Rules Logic ---
+    let rulesSolved = [false, false, false];
+
+    function checkRule(ruleNum, ans, btn) {
+        let isCorrect = false;
+        if (ruleNum === 1 && ans === 't') isCorrect = true;
+        if (ruleNum === 2 && ans === 'TT') isCorrect = true;
+        if (ruleNum === 3 && ans === 'tall') isCorrect = true;
+
+        const parent = btn.parentElement;
+        parent.querySelectorAll('.mini-btn').forEach(b => b.className = 'mini-btn');
+
+        if (isCorrect) {
+            btn.classList.add('correct');
+            document.getElementById(`card-rule${ruleNum}`).classList.add('done');
+            rulesSolved[ruleNum-1] = true;
+            checkAllRules();
+        } else {
+            btn.classList.add('wrong');
+            btn.style.animation = "shake 0.4s";
+            setTimeout(() => btn.style.animation = "", 400);
+        }
+    }
+
+    function checkAllRules() {
+        if (rulesSolved.every(r => r)) {
+            document.getElementById('rule-feedback').innerHTML = "太棒了！規則已建立，準備進入分離律實驗！";
+            setTimeout(() => unlockSection('section-gamete'), 1000);
+        }
+    }
+
+    function unlockSection(id) {
+        const el = document.getElementById(id);
+        el.classList.remove('locked');
+        el.scrollIntoView({behavior: "smooth", block: "center"});
+    }
+
+    // --- Section 2: Drag & Drop Logic ---
+    const draggables = document.querySelectorAll('.gene-draggable');
+    const targets = document.querySelectorAll('.gamete-target');
+    let filledGametes = 0;
+
+    draggables.forEach(d => {
+        d.addEventListener('dragstart', dragStart);
+        d.addEventListener('touchstart', touchStart, {passive: false});
+        d.addEventListener('touchmove', touchMove, {passive: false});
+        d.addEventListener('touchend', touchEnd);
+    });
+
+    targets.forEach(t => {
+        t.addEventListener('dragover', dragOver);
+        t.addEventListener('drop', drop);
+    });
+
+    function dragStart(e) { e.dataTransfer.setData('text/plain', e.target.id); }
+    function dragOver(e) { e.preventDefault(); if(!this.classList.contains('filled')) { this.classList.add('hovered'); } }
+    function drop(e) {
+        e.preventDefault(); this.classList.remove('hovered');
+        const id = e.dataTransfer.getData('text');
+        const draggable = document.getElementById(id);
+        if (!this.classList.contains('filled')) {
+            this.appendChild(draggable); draggable.style.position = 'relative'; draggable.style.left = '0'; draggable.style.right = '0';
+            this.classList.add('filled'); filledGametes++; checkGameteCompletion();
+        }
+    }
+
+    // Touch Support (Simplified)
+    let activeDrag = null; let touchOffset = {x:0, y:0};
+    function touchStart(e) { e.preventDefault(); activeDrag = this; const touch = e.touches[0]; const rect = this.getBoundingClientRect(); touchOffset.x = touch.clientX - rect.left; touchOffset.y = touch.clientY - rect.top; this.style.position = 'fixed'; this.style.zIndex = 1000; }
+    function touchMove(e) { e.preventDefault(); if(!activeDrag) return; const touch = e.touches[0]; activeDrag.style.left = (touch.clientX - touchOffset.x) + 'px'; activeDrag.style.top = (touch.clientY - touchOffset.y) + 'px'; }
+    function touchEnd(e) {
+        if(!activeDrag) return; const touch = e.changedTouches[0]; activeDrag.style.display = 'none'; const elemBelow = document.elementFromPoint(touch.clientX, touch.clientY); activeDrag.style.display = 'flex';
+        const target = elemBelow ? elemBelow.closest('.gamete-target') : null;
+        if (target && !target.classList.contains('filled')) {
+            target.appendChild(activeDrag); activeDrag.style.position = 'relative'; activeDrag.style.left = '0'; activeDrag.style.top = '0'; activeDrag.style.zIndex = '10'; target.classList.add('filled'); filledGametes++; checkGameteCompletion();
+        } else {
+            activeDrag.style.position = 'absolute';
+            if(activeDrag.id === 'gene-T') activeDrag.style.left = '15px'; else { activeDrag.style.left = 'auto'; activeDrag.style.right = '15px'; activeDrag.style.top = 'auto'; }
+        }
+        activeDrag = null;
+    }
+
+    function checkGameteCompletion() {
+        if (filledGametes === 2) {
+            document.getElementById('gamete-feedback').innerHTML = `<span style="color:var(--correct-color)">成功分離！配子各帶有一個因子。</span>`;
+            setTimeout(() => unlockSection('section-diagram'), 1000);
+        }
+    }
+
+    // --- Section 3: P -> F1 Interaction (Manual) ---
+    let p1Selection = null; // {index, value}
+    let p2Selection = null; // {index, value}
+    let p_combinations_found = []; 
+
+    function selectPGene(parent, index, value, btn) {
+        btn.parentElement.querySelectorAll('.gene-select-btn').forEach(b => b.classList.remove('selected'));
+        btn.classList.add('selected');
+        
+        if (parent === 'p1') p1Selection = {index: index, value: value};
+        if (parent === 'p2') p2Selection = {index: index, value: value};
+        
+        if (p1Selection && p2Selection) {
+            document.getElementById('combine-p-btn').style.display = 'inline-block';
+        }
+    }
+
+    function combinePGenesManual() {
+        const comboKey = `${p1Selection.index}${p2Selection.index}`;
+        const slotIndex = p1Selection.index * 2 + p2Selection.index;
+        const slotId = `slot-p-${slotIndex}`;
+        const slot = document.getElementById(slotId);
+
+        if (p_combinations_found.includes(comboKey)) {
+             document.getElementById('p-feedback').innerHTML = `<span style="color:#f39c12">這個組合已經找過了喔！試試別的配對。</span>`;
+        } else {
+            p_combinations_found.push(comboKey);
+            slot.classList.add('filled');
+            slot.innerHTML = `<i class="fas fa-seedling pea-visual" style="font-size:2em;"></i><b>Tt</b>`;
+            document.getElementById('p-feedback').innerHTML = `<span style="color:var(--correct-color)">組合成功！(T + t = Tt)</span>`;
+            
+            p1Selection = null;
+            p2Selection = null;
+            document.querySelectorAll('#p-f1-zone .gene-select-btn').forEach(btn => btn.classList.remove('selected'));
+            document.getElementById('combine-p-btn').style.display = 'none';
+
+            if (p_combinations_found.length === 4) {
+                 document.getElementById('p-feedback').innerHTML = `<span style="color:var(--correct-color)">太棒了！不論怎麼組合，F1 都是 Tt (高莖)。</span>`;
+                 setTimeout(() => {
+                    document.getElementById('arrow-to-f2').classList.remove('hidden');
+                    document.getElementById('f2-zone').classList.remove('hidden');
+                    document.getElementById('f2-zone').scrollIntoView({behavior: "smooth", block: "center"});
+                }, 1500);
+            }
+        }
+    }
+
+
+    // --- Section 3: F1 -> F2 Interaction (With Phenotype Check) ---
+    let selectedP1 = null;
+    let selectedP2 = null;
+    let foundCombinations = { 'TT': false, 'Tt1': false, 'Tt2': false, 'tt': false };
+    
+    // Temp storage for modal processing
+    let pendingGenotype = '';
+    let pendingTargetId = '';
+
+    function resetSelections() {
+        selectedP1 = null; selectedP2 = null;
+        document.querySelectorAll('#f2-zone .gene-select-btn').forEach(btn => btn.classList.remove('selected'));
+        document.getElementById('combine-btn').style.display = 'none';
+    }
+
+    function selectGene(parent, gene, btn) {
+        btn.parentElement.querySelectorAll('.gene-select-btn').forEach(b => b.classList.remove('selected'));
+        btn.classList.add('selected');
+        if (parent === 'p1') selectedP1 = gene;
+        if (parent === 'p2') selectedP2 = gene;
+        if (selectedP1 && selectedP2) {
+            document.getElementById('combine-btn').style.display = 'inline-block';
+        }
+    }
+
+    function combineGenes() {
+        const genotype = selectedP1 + selectedP2;
+        let targetId = '';
+        
+        if (genotype === 'TT') targetId = 'slot-TT';
+        else if (genotype === 'Tt') targetId = 'slot-Tt1';
+        else if (genotype === 'tT') targetId = 'slot-Tt2';
+        else if (genotype === 'tt') targetId = 'slot-tt';
+        
+        // Check if already found
+        if (foundCombinations[targetId.replace('slot-', '')]) {
+            document.getElementById('f2-feedback').innerHTML = `<span style="color:#f39c12">這個組合已經找過了喔！</span>`;
+            resetSelections();
+        } else {
+            // Trigger Modal instead of filling immediately
+            pendingGenotype = genotype;
+            pendingTargetId = targetId;
+            showPhenotypeModal(genotype);
+        }
+    }
+
+    // Modal Logic
+    function showPhenotypeModal(genotype) {
+        // Display genotype (normalize tT to Tt for display)
+        const displayG = (genotype === 'tT') ? 'Tt' : genotype;
+        document.getElementById('pheno-display').innerText = displayG;
+        document.getElementById('pheno-modal').style.display = 'flex';
+        document.getElementById('pheno-msg').innerText = '';
+    }
+
+    function checkPhenotype(choice) {
+        const genotype = pendingGenotype;
+        let correctChoice = '';
+        
+        // Determine correct phenotype based on genotype
+        if (genotype === 'TT' || genotype === 'Tt' || genotype === 'tT') correctChoice = 'tall';
+        else if (genotype === 'tt') correctChoice = 'short';
+
+        if (choice === correctChoice) {
+            // Correct!
+            document.getElementById('pheno-msg').innerHTML = `<span style="color:var(--correct-color)">答對了！</span>`;
+            setTimeout(() => {
+                document.getElementById('pheno-modal').style.display = 'none';
+                finalizeF2Slot();
+            }, 800);
+        } else {
+            // Wrong
+            document.getElementById('pheno-msg').innerHTML = `<span style="color:var(--wrong-color)">不對喔，再根據顯性法則想一想...</span>`;
+            const content = document.querySelector('.pheno-content');
+            content.style.animation = 'shake 0.4s';
+            setTimeout(() => content.style.animation = '', 400);
+        }
+    }
+
+    function finalizeF2Slot() {
+        let plantHTML = '';
+        let displayGenotype = (pendingGenotype === 'tT') ? 'Tt' : pendingGenotype;
+        
+        if (pendingGenotype === 'tt') {
+            plantHTML = `<i class="fas fa-seedling pea-visual short-visual" style="font-size:2em;"></i>`;
+        } else {
+            plantHTML = `<i class="fas fa-seedling pea-visual" style="font-size:2em;"></i>`;
+        }
+
+        const slot = document.getElementById(pendingTargetId);
+        slot.classList.add('filled');
+        slot.innerHTML = `${plantHTML}<b>${displayGenotype}</b>`;
+        
+        foundCombinations[pendingTargetId.replace('slot-', '')] = true;
+        document.getElementById('f2-feedback').innerHTML = `<span style="color:var(--correct-color)">成功組合並判斷出 ${displayGenotype}！</span>`;
+        
+        resetSelections();
+        checkF2Completion();
+    }
+
+    function checkF2Completion() {
+        const allFound = Object.values(foundCombinations).every(v => v);
+        if (allFound) {
+            document.getElementById('final-summary').style.display = 'block';
+            document.getElementById('next-btn').classList.add('active');
+            document.getElementById('f2-feedback').innerHTML = "";
+            document.body.style.transition = "background-color 1s";
+            document.body.style.backgroundColor = "#e8f5e9";
+        }
+    }
+
+    // Animation Keyframes
+    const styleSheet = document.createElement("style");
+    styleSheet.innerText = `
+        @keyframes shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-5px); } 75% { transform: translateX(5px); } }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes pop { 0% { transform: scale(0.5); } 100% { transform: scale(1); } }
+        .hidden { display: none !important; }
+    `;
+    document.head.appendChild(styleSheet);
+
+</script>
+</body>
+</html>

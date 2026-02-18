@@ -1,0 +1,529 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>活動：昆蟲體色遺傳分析</title>
+    
+    <!-- 引入 Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- 引入 Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;700&family=Comfortaa:wght@700&display=swap" rel="stylesheet">
+
+    <style>
+        :root {
+            --primary-green: #6B8E23;
+            --light-green: #F0FFF0;
+            --earth-brown: #8B4513;
+            --insect-dark: #3e2723;   /* 深色 B */
+            --insect-light: #dcedc8;  /* 淺色 b */
+            --text-color: #333333;
+            --correct-color: #2e7d32;
+            --wrong-color: #c62828;
+            --disabled-gray: #ccc;
+        }
+
+        body {
+            font-family: 'Noto Sans TC', sans-serif;
+            background-color: #fcfbf4;
+            color: var(--text-color);
+            margin: 0;
+            padding: 20px;
+            line-height: 1.8;
+            font-size: 19px;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background-color: white;
+            padding: 40px;
+            border-radius: 20px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+            border: 2px solid #e0e0e0;
+        }
+
+        header {
+            text-align: center;
+            border-bottom: 3px solid var(--primary-green);
+            padding-bottom: 20px;
+            margin-bottom: 30px;
+        }
+
+        h1 { color: var(--primary-green); font-size: 2.2em; margin-bottom: 10px; }
+        .subtitle { font-size: 1.2em; color: #666; font-weight: bold; }
+
+        /* Problem Sections */
+        .problem-section {
+            background: #fff;
+            border: 2px solid #ddd;
+            border-radius: 15px;
+            padding: 25px;
+            margin-bottom: 30px;
+            position: relative;
+            transition: all 0.5s;
+        }
+
+        .problem-section.locked {
+            opacity: 0.5; pointer-events: none; filter: grayscale(0.8);
+        }
+
+        .problem-header {
+            background: var(--light-green);
+            padding: 10px 20px;
+            border-radius: 10px;
+            font-weight: bold;
+            color: var(--earth-brown);
+            margin-bottom: 20px;
+            border-left: 5px solid var(--primary-green);
+        }
+
+        .insect-visual {
+            font-size: 3.5em;
+            transition: color 0.3s;
+        }
+        .color-dark { color: var(--insect-dark); filter: drop-shadow(2px 2px 2px rgba(0,0,0,0.3)); }
+        .color-light { color: var(--insect-light); filter: drop-shadow(2px 2px 2px rgba(0,0,0,0.5)); stroke: #333; stroke-width: 1px; }
+
+        .gene-label {
+            font-family: 'Comfortaa'; font-weight: bold; font-size: 1.2em;
+            background: #eee; padding: 2px 10px; border-radius: 5px;
+            margin-top: 5px; display: inline-block;
+        }
+
+        /* Vertical Flow Layout */
+        .breeding-flow {
+            display: flex; flex-direction: column; align-items: center; gap: 20px;
+            background: #fafafa; padding: 20px; border-radius: 15px; margin: 20px 0;
+            border: 1px dashed #ccc;
+        }
+
+        .parents-row {
+            display: flex; gap: 80px; align-items: flex-end;
+        }
+        
+        .parent-box { text-align: center; }
+        
+        .arrow-down { font-size: 2em; color: #ccc; }
+
+        /* Punnett Mini */
+        .punnett-mini {
+            display: grid;
+            grid-template-columns: 40px 80px 80px;
+            grid-template-rows: 40px 80px 80px;
+            gap: 5px;
+            margin-top: 10px;
+            justify-content: center;
+        }
+        
+        .p-cell {
+            display: flex; align-items: center; justify-content: center;
+            font-family: 'Comfortaa'; font-weight: bold; border-radius: 5px;
+        }
+        .p-header { background: #e0f2f1; color: var(--primary-green); }
+        .p-header.target { border: 2px dashed #999; background: #fff; }
+        .p-header.filled { border: 2px solid var(--correct-color); background: #e8f5e9; }
+        
+        .p-grid {
+            background: #fff; border: 2px solid #ddd;
+            flex-direction: column; font-size: 1.2em;
+            cursor: pointer; position: relative;
+        }
+        .p-grid:hover { background: #f5f5f5; }
+        .p-grid.filled { background: #fffde7; border-color: #fbc02d; }
+        .p-grid-content { z-index: 2; }
+        .p-grid-bg { position: absolute; font-size: 3em; opacity: 0.2; z-index: 1; }
+
+        /* Drag Elements */
+        .gene-source-area {
+            display: flex; gap: 15px; justify-content: center; margin: 15px 0;
+            background: #fff3e0; padding: 10px; border-radius: 10px;
+        }
+        
+        .draggable-gene {
+            width: 40px; height: 40px; border-radius: 50%;
+            background: white; border: 2px solid var(--earth-brown);
+            display: flex; align-items: center; justify-content: center;
+            font-family: 'Comfortaa'; font-weight: bold; cursor: grab;
+            box-shadow: 0 3px 0 #5d4037;
+        }
+        .draggable-gene:active { cursor: grabbing; transform: translateY(2px); box-shadow: none; }
+
+        /* Input Styles */
+        .ratio-input {
+            width: 60px; padding: 5px; text-align: center; font-size: 1.1em;
+            border: 2px solid #ccc; border-radius: 5px; font-family: 'Comfortaa';
+        }
+
+        /* Q2 Combination Slots */
+        .combo-row {
+            display: flex; align-items: center; gap: 10px; margin-bottom: 10px;
+            background: #fff; padding: 10px; border-radius: 8px; border: 1px solid #eee;
+        }
+        
+        .combo-slot {
+            width: 60px; height: 40px; border: 2px dashed #999; border-radius: 5px;
+            display: flex; align-items: center; justify-content: center;
+            font-family: 'Comfortaa'; font-weight: bold; background: #f9f9f9;
+        }
+        .combo-slot.filled { border-style: solid; border-color: var(--primary-green); background: #e8f5e9; }
+        
+        .draggable-pair {
+            padding: 5px 15px; background: white; border: 2px solid #333;
+            border-radius: 20px; font-family: 'Comfortaa'; font-weight: bold;
+            cursor: grab; box-shadow: 0 3px 0 #333;
+        }
+
+        /* Feedback */
+        .feedback-area {
+            margin-top: 15px; text-align: center; font-weight: bold; min-height: 30px;
+        }
+
+        .action-btn {
+            background-color: var(--earth-brown); color: white; border: none;
+            padding: 10px 30px; border-radius: 50px; font-size: 1.1em;
+            cursor: pointer; transition: all 0.3s; box-shadow: 0 4px 0 #5d4037;
+        }
+        .action-btn:hover { background-color: #6d4c41; }
+        .action-btn:disabled { background-color: #ccc; box-shadow: none; cursor: not-allowed; }
+
+        /* Footer */
+        .footer-nav { text-align: center; margin-top: 50px; border-top: 2px solid #eee; padding-top: 20px; }
+        .next-btn {
+            background-color: var(--primary-green); color: white; padding: 15px 40px; font-size: 1.5em;
+            border-radius: 50px; text-decoration: none; border: none; cursor: pointer; opacity: 0.5; pointer-events: none;
+        }
+        .next-btn.active { opacity: 1; pointer-events: auto; background-color: #556B2F; box-shadow: 0 5px 15px rgba(107, 142, 35, 0.4); }
+
+        @keyframes pop { 0% { transform: scale(0); } 80% { transform: scale(1.1); } 100% { transform: scale(1); } }
+
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <header>
+        <h1><i class="fas fa-bug"></i> 昆蟲體色遺傳分析</h1>
+        <div class="subtitle">單元六：實戰演練與判斷</div>
+    </header>
+
+    <div style="background:#fff3e0; padding:15px; border-radius:10px; margin-bottom:30px; border-left:5px solid #ff9800;">
+        <i class="fas fa-info-circle"></i> <b>情境說明：</b><br>
+        科學家發現一種昆蟲，體色有深、淺兩種。<br>
+        由顯性基因 <b>B (深色)</b> 與隱性基因 <b>b (淺色)</b> 控制。
+    </div>
+
+    <!-- Problem 1 -->
+    <section id="p1" class="problem-section">
+        <div class="problem-header">1. 測交實驗：深色(Bb) × 淺色(bb)</div>
+        <p>如果將一隻深色雜合子 (Bb) 與一隻淺色 (bb) 昆蟲交配，子代的比例為何？請完成下方的棋盤方格法。</p>
+
+        <div class="breeding-flow">
+            <!-- Parents -->
+            <div class="parents-row">
+                <div class="parent-box">
+                    <div style="margin-bottom:5px;">親代 (P)</div>
+                    <i class="fas fa-bug insect-visual color-dark"></i>
+                    <div class="gene-label">Bb</div>
+                </div>
+                <div class="parent-box">
+                    <div style="margin-bottom:5px;">親代 (P)</div>
+                    <i class="fas fa-bug insect-visual color-light"></i>
+                    <div class="gene-label">bb</div>
+                </div>
+            </div>
+            
+            <div class="arrow-down"><i class="fas fa-arrow-down"></i></div>
+
+            <!-- Analysis Tool -->
+            <div style="text-align:center;">
+                <div class="gene-source-area">
+                    <div class="draggable-gene" draggable="true" data-val="B">B</div>
+                    <div class="draggable-gene" draggable="true" data-val="b" style="background:#e1f5fe; border-color:#0277bd;">b</div>
+                    <span style="align-self:center; font-size:0.9em; color:#666;">(請拖曳配子至方格表頭)</span>
+                </div>
+
+                <div class="punnett-mini">
+                    <div class="p-cell"></div>
+                    <div class="p-cell p-header target" id="p1-top-1" data-expect="B"></div>
+                    <div class="p-cell p-header target" id="p1-top-2" data-expect="b"></div>
+                    
+                    <div class="p-cell p-header target" id="p1-left-1" data-expect="b"></div>
+                    <div class="p-cell p-grid" id="p1-c1" onclick="fillCell(this, 'b', 'B')"></div>
+                    <div class="p-cell p-grid" id="p1-c2" onclick="fillCell(this, 'b', 'b')"></div>
+                    
+                    <div class="p-cell p-header target" id="p1-left-2" data-expect="b"></div>
+                    <div class="p-cell p-grid" id="p1-c3" onclick="fillCell(this, 'b', 'B')"></div>
+                    <div class="p-cell p-grid" id="p1-c4" onclick="fillCell(this, 'b', 'b')"></div>
+                </div>
+                <div style="font-size:0.8em; color:#888; margin-top:5px;">(填完配子後，點擊格子組合子代)</div>
+            </div>
+        </div>
+
+        <div style="text-align:center; margin-top:20px;">
+            <p><b>實驗結論：</b><br>子代中 深色 : 淺色 = <input type="number" id="ans-p1-dark" class="ratio-input"> : <input type="number" id="ans-p1-light" class="ratio-input"></p>
+            <button class="action-btn" onclick="checkP1()">送出分析</button>
+            <div id="fb-p1" class="feedback-area"></div>
+        </div>
+    </section>
+
+    <!-- Problem 2 -->
+    <section id="p2" class="problem-section locked">
+        <div class="problem-header">2. 探究實驗：深色 × 深色 &#8594; 淺色？</div>
+        <p>兩隻深色昆蟲 (B_) 是否有機會生出淺色 (bb) 的子代？讓我們來驗證看看。</p>
+
+        <!-- Sub Q1 -->
+        <div style="margin-bottom:20px; padding-bottom:15px; border-bottom:1px dashed #ccc;">
+            <p>(1) 請列出兩隻深色昆蟲交配，基因型有哪些可能的組合？(請拖曳填空)</p>
+            
+            <div class="gene-source-area" style="justify-content:center;">
+                <div class="draggable-pair" draggable="true" id="pair-BB">BB</div>
+                <div class="draggable-pair" draggable="true" id="pair-Bb">Bb</div>
+            </div>
+
+            <div style="display:flex; flex-direction:column; align-items:center;">
+                <div class="combo-row">
+                    1. <div class="combo-slot" data-slot="1"></div> × <div class="combo-slot" data-slot="1"></div> (全顯性)
+                </div>
+                <div class="combo-row">
+                    2. <div class="combo-slot" data-slot="2"></div> × <div class="combo-slot" data-slot="2"></div> (一顯一雜)
+                </div>
+                <div class="combo-row">
+                    3. <div class="combo-slot" data-slot="3"></div> × <div class="combo-slot" data-slot="3"></div> (雙雜合)
+                </div>
+            </div>
+            <div style="text-align:center;">
+                <button class="action-btn" id="btn-p2-1" onclick="checkP2Step1()">確認組合</button>
+                <div id="fb-p2-1" class="feedback-area"></div>
+            </div>
+        </div>
+
+        <!-- Sub Q2 -->
+        <div id="p2-step2" style="display:none; animation: pop 0.5s;">
+            <p>(2) 承上題，哪一種組合會生出淺色 (bb)？請完成下表分析。</p>
+            
+            <div class="breeding-flow">
+                <div class="parents-row">
+                    <div class="parent-box">
+                        <i class="fas fa-bug insect-visual color-dark"></i>
+                        <div class="gene-label">Bb</div>
+                    </div>
+                    <div style="align-self:center;">×</div>
+                    <div class="parent-box">
+                        <i class="fas fa-bug insect-visual color-dark"></i>
+                        <div class="gene-label">Bb</div>
+                    </div>
+                </div>
+                
+                <div class="punnett-mini">
+                    <div class="p-cell"></div>
+                    <div class="p-cell p-header filled" style="background:#eee;">B</div>
+                    <div class="p-cell p-header filled" style="background:#eee;">b</div>
+                    
+                    <div class="p-cell p-header filled" style="background:#eee;">B</div>
+                    <div class="p-cell p-grid" id="p2-c1" onclick="fillCell(this, 'B', 'B', true)"></div>
+                    <div class="p-cell p-grid" id="p2-c2" onclick="fillCell(this, 'b', 'B', true)"></div>
+                    
+                    <div class="p-cell p-header filled" style="background:#eee;">b</div>
+                    <div class="p-cell p-grid" id="p2-c3" onclick="fillCell(this, 'B', 'b', true)"></div>
+                    <div class="p-cell p-grid" id="p2-c4" onclick="fillCell(this, 'b', 'b', true)"></div>
+                </div>
+                <div style="font-size:0.8em; color:#888; text-align:center;">(點擊格子填入基因型)</div>
+            </div>
+
+            <div style="text-align:center; margin-top:20px;">
+                <p><b>結論：</b> 會生出淺色子代的基因型組合為：
+                    <select id="ans-p2-final" class="ratio-input" style="width:120px;">
+                        <option value="">請選擇</option>
+                        <option value="BBxBB">BB × BB</option>
+                        <option value="BBxBb">BB × Bb</option>
+                        <option value="BbxBb">Bb × Bb</option>
+                    </select>
+                </p>
+                <button class="action-btn" onclick="checkP2Final()">完成分析</button>
+                <div id="fb-p2-final" class="feedback-area"></div>
+            </div>
+        </div>
+
+    </section>
+
+    <!-- Nav -->
+    <div class="footer-nav">
+        <a href="mi07qq.html" class="next-btn" id="next-btn">
+            全數答對！前往下一關 <i class="fas fa-arrow-right"></i>
+        </a>
+    </div>
+
+</div>
+
+<script>
+    // --- Drag & Drop Utils ---
+    let draggedItem = null;
+    let draggedVal = null;
+
+    document.querySelectorAll('[draggable="true"]').forEach(el => {
+        el.addEventListener('dragstart', e => {
+            draggedItem = e.target;
+            draggedVal = e.target.dataset.val || e.target.innerText;
+        });
+        // Touch support
+        el.addEventListener('touchstart', e => {
+            e.preventDefault();
+            draggedItem = e.target;
+            draggedVal = e.target.dataset.val || e.target.innerText;
+            draggedItem.style.position = 'absolute';
+            draggedItem.style.zIndex = 1000;
+        });
+        el.addEventListener('touchmove', e => {
+            e.preventDefault();
+            const t = e.touches[0];
+            draggedItem.style.left = t.clientX - 20 + 'px';
+            draggedItem.style.top = t.clientY - 20 + 'px';
+        });
+        el.addEventListener('touchend', e => {
+            const t = e.changedTouches[0];
+            draggedItem.style.display = 'none';
+            const elBelow = document.elementFromPoint(t.clientX, t.clientY);
+            draggedItem.style.display = 'flex';
+            const drop = elBelow ? elBelow.closest('.target, .combo-slot') : null;
+            if(drop) handleDrop(drop);
+            else draggedItem.style.position = 'static';
+            draggedItem = null;
+        });
+    });
+
+    document.querySelectorAll('.target, .combo-slot').forEach(el => {
+        el.addEventListener('dragover', e => e.preventDefault());
+        el.addEventListener('drop', e => {
+            e.preventDefault();
+            handleDrop(el);
+        });
+    });
+
+    function handleDrop(target) {
+        // P1 Gamete Drop
+        if (target.classList.contains('target')) {
+            if (target.classList.contains('filled')) return;
+            // Validate: check parent
+            const expected = target.dataset.expect;
+            if (draggedVal !== expected) {
+                alert(`這個配子不對喔！親代是 ${expected === 'B' ? 'Bb' : 'bb'}，這裡應該放 ${expected}`);
+                return;
+            }
+            target.innerText = draggedVal;
+            target.classList.add('filled');
+            checkP1Gametes();
+        }
+        
+        // P2 Combo Drop
+        if (target.classList.contains('combo-slot')) {
+            // Clone the text
+            target.innerText = draggedVal;
+            target.classList.add('filled');
+        }
+        
+        if (draggedItem && draggedItem.style.position === 'absolute') {
+            draggedItem.style.position = 'static';
+        }
+    }
+
+    // --- P1 Logic ---
+    let p1GametesFilled = 0;
+    function checkP1Gametes() {
+        p1GametesFilled++;
+        // Enable grid clicking if all 4 headers filled
+        // Simplified: logic resides in fillCell
+    }
+
+    let p1CellsFilled = 0;
+    function fillCell(cell, g1, g2, isP2 = false) {
+        if (!cell.parentElement.querySelectorAll('.p-header.filled').length === 4) {
+            if (!isP2) { alert('請先填寫完配子！'); return; }
+        }
+        if (cell.classList.contains('filled')) return;
+
+        // Logic
+        let geno = g1 + g2;
+        if (geno === 'bB') geno = 'Bb';
+        
+        const colorClass = geno.includes('B') ? 'color-dark' : 'color-light';
+        
+        cell.innerHTML = `
+            <i class="fas fa-bug insect-visual ${colorClass} p-grid-bg"></i>
+            <span class="p-grid-content">${geno}</span>
+        `;
+        cell.classList.add('filled');
+        
+        if(!isP2) p1CellsFilled++;
+    }
+
+    function checkP1() {
+        const dark = parseInt(document.getElementById('ans-p1-dark').value);
+        const light = parseInt(document.getElementById('ans-p1-light').value);
+        const fb = document.getElementById('fb-p1');
+
+        if (dark === 1 && light === 1) {
+            fb.style.color = "var(--correct-color)";
+            fb.innerHTML = "<i class='fas fa-check-circle'></i> 正確！比例為 2:2 = 1:1。";
+            setTimeout(() => {
+                document.getElementById('p2').classList.remove('locked');
+                document.getElementById('p2').scrollIntoView({behavior: 'smooth', block: 'center'});
+            }, 1000);
+        } else {
+            fb.style.color = "var(--wrong-color)";
+            fb.innerText = "比例不對喔，請數數看格子裡的 Bb(深) 和 bb(淺) 各有幾個？";
+        }
+    }
+
+    // --- P2 Logic ---
+    function checkP2Step1() {
+        const slots = document.querySelectorAll('.combo-slot');
+        const vals = Array.from(slots).map(s => s.innerText);
+        
+        // Expected: BBxBB, BBxBb, BbxBb (order in rows)
+        // Row 1: BB, BB
+        // Row 2: BB, Bb (or Bb, BB)
+        // Row 3: Bb, Bb
+        
+        const r1 = vals.slice(0,2).sort().join('');
+        const r2 = vals.slice(2,4).sort().join('');
+        const r3 = vals.slice(4,6).sort().join('');
+        
+        const fb = document.getElementById('fb-p2-1');
+        
+        if (r1 === 'BBBB' && r2 === 'BBBb' && r3 === 'BbBb') {
+            fb.style.color = "var(--correct-color)";
+            fb.innerText = "組合正確！接下來驗證哪一組會生出淺色。";
+            document.getElementById('btn-p2-1').style.display = 'none';
+            document.getElementById('p2-step2').style.display = 'block';
+        } else {
+            fb.style.color = "var(--wrong-color)";
+            fb.innerText = "組合有誤喔！請依序排列：全顯性組合 -> 帶一個隱性 -> 帶兩個隱性。";
+        }
+    }
+
+    function checkP2Final() {
+        const ans = document.getElementById('ans-p2-final').value;
+        const fb = document.getElementById('fb-p2-final');
+        const gridFilled = document.querySelectorAll('#p2-step2 .p-grid.filled').length;
+
+        if (gridFilled < 4) {
+            fb.innerText = "請先完成上方的棋盤方格！";
+            return;
+        }
+
+        if (ans === 'BbxBb') {
+            fb.style.color = "var(--correct-color)";
+            fb.innerHTML = "<i class='fas fa-crown'></i> 恭喜過關！只有雙親都是雜合子 (Bb)，才有機會生出隱性 (bb) 子代。";
+            document.getElementById('next-btn').classList.add('active');
+        } else {
+            fb.style.color = "var(--wrong-color)";
+            fb.innerText = "再想想，哪一個棋盤方格裡出現了 bb？";
+        }
+    }
+
+</script>
+</body>
+</html>

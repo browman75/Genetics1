@@ -1,0 +1,578 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>遺傳組合挑戰賽</title>
+    
+    <!-- 引入 Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- 引入 Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;700&family=Comfortaa:wght@700&display=swap" rel="stylesheet">
+
+    <style>
+        :root {
+            --primary-green: #6B8E23;
+            --light-green: #F0FFF0;
+            --earth-brown: #8B4513;
+            --danger-red: #d32f2f;
+            --energy-yellow: #fbc02d;
+            --text-color: #333;
+            --parent-red: #e53935; /* 親代紅色 */
+            --child-blue: #1e88e5;  /* 子代藍色 */
+        }
+
+        body {
+            font-family: 'Comfortaa', 'Noto Sans TC', sans-serif;
+            background-color: #222;
+            color: white;
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        /* --- Login Screen --- */
+        #login-screen, #game-over-screen {
+            background: rgba(255, 255, 255, 0.95);
+            color: #333;
+            padding: 40px;
+            border-radius: 20px;
+            text-align: center;
+            box-shadow: 0 0 50px rgba(0,0,0,0.5);
+            z-index: 100;
+            max-width: 500px;
+            width: 90%;
+            font-family: 'Noto Sans TC', sans-serif;
+        }
+
+        .instruction-box {
+            background: #fff3e0;
+            border: 2px dashed #ffb74d;
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 20px;
+            text-align: left;
+            font-size: 0.95em;
+            color: #555;
+            line-height: 1.6;
+        }
+
+        .instruction-box h3 {
+            margin: 0 0 10px 0;
+            color: #e65100;
+            font-size: 1.1em;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .instruction-box ul {
+            margin: 0;
+            padding-left: 20px;
+        }
+
+        .input-group { margin: 15px 0; text-align: left; }
+        .input-group label { display: block; font-weight: bold; margin-bottom: 5px; color: var(--earth-brown); }
+        .input-group input { 
+            width: 100%; padding: 10px; font-size: 1.2em; 
+            border: 2px solid #ccc; border-radius: 8px; box-sizing: border-box;
+            font-family: 'Comfortaa', sans-serif;
+        }
+
+        .btn-start, .btn-next {
+            background: var(--primary-green); color: white;
+            border: none; padding: 15px 40px; font-size: 1.5em; font-weight: bold;
+            border-radius: 50px; cursor: pointer; transition: 0.3s;
+            box-shadow: 0 5px 0 #556B2F;
+            width: 100%;
+            font-family: 'Noto Sans TC', sans-serif;
+        }
+        .btn-start:hover, .btn-next:hover { transform: translateY(-3px); }
+        .btn-start:active, .btn-next:active { transform: translateY(2px); box-shadow: none; }
+
+        /* --- Game World (3D Perspective) --- */
+        #game-world {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: linear-gradient(to bottom, #111 0%, #333 50%, #1b5e20 50%, #000 100%);
+            perspective: 800px;
+            overflow: hidden;
+            display: none;
+        }
+
+        .floor-grid {
+            position: absolute; bottom: 0; left: 0; width: 100%; height: 50%;
+            background-image: 
+                linear-gradient(0deg, transparent 24%, rgba(255,255,255,.1) 25%, rgba(255,255,255,.1) 26%, transparent 27%, transparent 74%, rgba(255,255,255,.1) 75%, rgba(255,255,255,.1) 76%, transparent 77%, transparent),
+                linear-gradient(90deg, transparent 24%, rgba(255,255,255,.1) 25%, rgba(255,255,255,.1) 26%, transparent 27%, transparent 74%, rgba(255,255,255,.1) 75%, rgba(255,255,255,.1) 76%, transparent 77%, transparent);
+            background-size: 50px 50px;
+            transform-origin: bottom;
+            transform: rotateX(60deg);
+            animation: moveFloor 2s linear infinite;
+        }
+
+        @keyframes moveFloor {
+            from { background-position: 0 0; }
+            to { background-position: 0 50px; }
+        }
+
+        /* --- HUD --- */
+        .hud {
+            position: absolute; width: 100%; padding: 20px; box-sizing: border-box;
+            display: flex; justify-content: space-between; font-size: 1.5em; font-weight: bold;
+            text-shadow: 2px 2px 0 #000; z-index: 10;
+        }
+        #progress-display { color: var(--energy-yellow); }
+        #score-display { color: #fff; }
+
+        /* --- Monster --- */
+        .monster-container {
+            position: absolute;
+            left: 50%; 
+            top: 20%; 
+            transform: translate(-50%, -50%) translateZ(-300px);
+            transform-style: preserve-3d;
+            width: 400px; height: 400px;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+        }
+
+        .monster-body {
+            font-size: 150px;
+            color: #ef5350;
+            filter: drop-shadow(0 0 20px rgba(255,0,0,0.5));
+            animation: float 3s ease-in-out infinite;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-20px); }
+        }
+
+        .question-card {
+            background: white; color: #333; padding: 15px 25px;
+            border-radius: 20px; 
+            border: 6px solid var(--earth-brown);
+            box-shadow: 0 0 30px rgba(255,255,255,0.8);
+            margin-top: -30px;
+            z-index: 2;
+            text-align: center;
+            min-width: 250px;
+        }
+
+        /* --- Weapons (Answers) --- */
+        .weapon-rack {
+            position: absolute; bottom: 30px; width: 100%;
+            display: flex; justify-content: center; gap: 15px;
+            z-index: 20;
+            flex-wrap: wrap;
+            padding: 0 20px;
+            box-sizing: border-box;
+        }
+
+        .weapon-card {
+            background: rgba(255,255,255,0.95);
+            border: 3px solid #666;
+            color: #333;
+            width: 160px; height: 130px;
+            border-radius: 15px;
+            cursor: pointer;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            transition: all 0.1s;
+            box-shadow: 0 6px 0 #444;
+            padding: 10px;
+            text-align: center;
+        }
+
+        .weapon-card:active { transform: translateY(6px); box-shadow: none; }
+        .weapon-card:hover { background: white; transform: translateY(-4px); border-color: var(--primary-green); }
+
+        /* Typography for Cards */
+        .card-label {
+            font-size: 0.8em;
+            font-weight: bold;
+            display: block;
+            margin-bottom: 5px;
+            letter-spacing: 1px;
+        }
+        
+        .card-value {
+            font-size: 1.2em;
+            font-weight: bold;
+            display: block;
+            line-height: 1.3;
+            font-family: 'Comfortaa', sans-serif;
+        }
+        
+        /* Specific tweaks for question card to be larger */
+        .question-card .card-label { font-size: 1em; }
+        .question-card .card-value { font-size: 1.6em; }
+
+        .text-parent { color: var(--parent-red); }
+        .text-child { color: var(--child-blue); }
+
+        /* Animations */
+        .attack-anim {
+            position: absolute; bottom: 0; left: 50%; transform: translateX(-50%);
+            font-size: 120px; color: yellow; pointer-events: none;
+            animation: shoot 0.3s forwards;
+            display: none; z-index: 15;
+        }
+
+        @keyframes shoot { 
+            0% { bottom: 100px; transform: translateX(-50%) scale(1); opacity: 1; }
+            100% { bottom: 50%; transform: translateX(-50%) scale(0.2); opacity: 0; }
+        }
+
+        .hit-effect {
+            position: absolute; top: 20%; left: 50%; transform: translate(-50%, -50%);
+            font-size: 250px; color: white; display: none; z-index: 20;
+            text-shadow: 0 0 30px gold; animation: pop 0.2s;
+        }
+
+        @keyframes pop { 0% {transform:translate(-50%,-50%) scale(0.5);} 100% {transform:translate(-50%,-50%) scale(1.2);} }
+
+        /* Leaderboard */
+        .leaderboard-table {
+            width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 0.9em;
+            font-family: 'Noto Sans TC', sans-serif;
+        }
+        .leaderboard-table th { background: var(--primary-green); color: white; padding: 8px; }
+        .leaderboard-table td { border-bottom: 1px solid #eee; padding: 8px; }
+        .rank-1 { color: gold; font-weight: bold; }
+        .rank-2 { color: silver; font-weight: bold; }
+        .rank-3 { color: #cd7f32; font-weight: bold; }
+
+        /* Utility */
+        .hidden { display: none !important; }
+        .shake { animation: shake 0.5s; border-color: red; background: #ffebee; }
+        @keyframes shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-10px); } 75% { transform: translateX(10px); } }
+
+    </style>
+</head>
+<body>
+
+<!-- 1. LOGIN SCREEN -->
+<div id="login-screen">
+    <h1 style="font-size: 2em;"><i class="fas fa-gamepad"></i> 遺傳組合挑戰賽</h1>
+    
+    <!-- Game Instructions -->
+    <div class="instruction-box">
+        <h3><i class="fas fa-info-circle"></i> 遊戲說明</h3>
+        <ul>
+            <li>本關卡共有 <b>10 道</b> 遺傳推理題。</li>
+            <li>題目出現時，請快速點擊下方正確的答案卡。</li>
+            <li><b>答對加分</b>（速度越快分數越高），<b>答錯會扣分</b>。</li>
+            <li>題目包含：由親代推算子代，或由子代反推親代組合。</li>
+        </ul>
+    </div>
+
+    <div class="input-group">
+        <label>班級 (例如 701)</label>
+        <input type="number" id="class-id" placeholder="請輸入班級">
+    </div>
+    <div class="input-group">
+        <label>座號 (例如 05)</label>
+        <input type="number" id="seat-id" placeholder="請輸入座號">
+    </div>
+    <button class="btn-start" onclick="startGame()">開始挑戰</button>
+    <div id="login-error" style="color:red; margin-top:10px;"></div>
+</div>
+
+<!-- 2. GAME WORLD -->
+<div id="game-world">
+    <div class="floor-grid"></div>
+    
+    <div class="hud">
+        <div id="score-display">SCORE: 0</div>
+        <div id="progress-display"><i class="fas fa-flag"></i> 1 / 10</div>
+    </div>
+
+    <!-- The Monster -->
+    <div id="monster" class="monster-container">
+        <div class="monster-body"><i class="fas fa-ghost"></i></div>
+        <div class="question-card" id="q-text">
+            <!-- Example format (injected by JS) -->
+            <div class="card-label text-parent">親代</div>
+            <div class="card-value">Aa × Aa</div>
+        </div>
+    </div>
+
+    <!-- Hit Effect -->
+    <div id="hit-fx" class="hit-effect"><i class="fas fa-bahai"></i></div>
+
+    <!-- Attack Projectile -->
+    <div id="projectile" class="attack-anim"><i class="fas fa-bolt"></i></div>
+
+    <!-- Weapons (Answers) -->
+    <div class="weapon-rack" id="weapon-rack">
+        <!-- Buttons injected by JS -->
+    </div>
+</div>
+
+<!-- 3. GAME OVER SCREEN -->
+<div id="game-over-screen" class="hidden">
+    <h1 style="color:var(--earth-brown);">挑戰完成！</h1>
+    <h2 id="final-score" style="font-size:3em; margin:10px 0; color:var(--primary-green);">0</h2>
+    <div id="submit-status" style="margin-bottom:15px; color:#666;"><i class="fas fa-spinner fa-spin"></i> 成績上傳中...</div>
+    
+    <h3 style="border-bottom:2px solid #ddd; padding-bottom:5px; text-align:left;">🏆 即時排行榜 (Top 10)</h3>
+    <div style="height:200px; overflow-y:auto;">
+        <table class="leaderboard-table">
+            <thead><tr><th>排名</th><th>班級</th><th>座號</th><th>分數</th></tr></thead>
+            <tbody id="leaderboard-body"></tbody>
+        </table>
+    </div>
+    
+    <div style="margin-top:20px;">
+        <a href="mi0999.html" id="next-link" class="hidden">
+            <button class="btn-next">前往下一站 <i class="fas fa-arrow-right"></i></button>
+        </a>
+    </div>
+</div>
+
+<script>
+    // --- Configuration ---
+    // *重要*：請將您部署好的 Google Apps Script 網址貼在這裡
+    const GAS_API_URL = '您的_GOOGLE_SCRIPT_URL'; 
+    
+    // --- Game Data ---
+    // Added specific query prompts (ask for Genotype vs Phenotype)
+    const questions = [
+        // Type 1: Parent -> Child (Genotype Ratio)
+        { q: "親代：AA × AA<br><span style='font-size:0.6em'>(求基因型)</span>", type: "GenoRatio", ans: "子代基因型：100% AA", options: ["子代基因型：100% AA", "子代基因型：100% Aa", "子代基因型：1:1 (AA:Aa)", "子代基因型：100% aa"] },
+        { q: "親代：AA × Aa<br><span style='font-size:0.6em'>(求基因型)</span>", type: "GenoRatio", ans: "子代基因型：1:1 (AA:Aa)", options: ["子代基因型：100% AA", "子代基因型：1:1 (AA:Aa)", "子代基因型：1:2:1", "子代基因型：100% Aa"] },
+        { q: "親代：AA × aa<br><span style='font-size:0.6em'>(求基因型)</span>", type: "GenoRatio", ans: "子代基因型：100% Aa", options: ["子代基因型：100% Aa", "子代基因型：1:1 (Aa:aa)", "子代基因型：100% AA", "子代基因型：1:2:1"] },
+        { q: "親代：Aa × Aa<br><span style='font-size:0.6em'>(求基因型)</span>", type: "GenoRatio", ans: "子代基因型：1:2:1", options: ["子代基因型：1:1", "子代基因型：1:2:1", "子代基因型：3:1", "子代基因型：100% Aa"] },
+        { q: "親代：Aa × aa<br><span style='font-size:0.6em'>(求基因型)</span>", type: "GenoRatio", ans: "子代基因型：1:1 (Aa:aa)", options: ["子代基因型：1:1 (Aa:aa)", "子代基因型：100% aa", "子代基因型：3:1", "子代基因型：100% Aa"] },
+        { q: "親代：aa × aa<br><span style='font-size:0.6em'>(求基因型)</span>", type: "GenoRatio", ans: "子代基因型：100% aa", options: ["子代基因型：100% aa", "子代基因型：1:1", "子代基因型：100% Aa", "子代基因型：100% AA"] },
+
+        // Type 2: Parent -> Child (Phenotype Ratio)
+        { q: "親代：AA × AA<br><span style='font-size:0.6em'>(求表現型)</span>", type: "PhenoRatio", ans: "子代表現型：100% 顯性", options: ["子代表現型：100% 顯性", "子代表現型：3:1", "子代表現型：1:1", "子代表現型：100% 隱性"] },
+        { q: "親代：AA × Aa<br><span style='font-size:0.6em'>(求表現型)</span>", type: "PhenoRatio", ans: "子代表現型：100% 顯性", options: ["子代表現型：100% 顯性", "子代表現型：3:1", "子代表現型：1:1", "子代表現型：1:2:1"] },
+        { q: "親代：AA × aa<br><span style='font-size:0.6em'>(求表現型)</span>", type: "PhenoRatio", ans: "子代表現型：100% 顯性", options: ["子代表現型：100% 顯性", "子代表現型：1:1", "子代表現型：100% 隱性", "子代表現型：3:1"] },
+        { q: "親代：Aa × Aa<br><span style='font-size:0.6em'>(求表現型)</span>", type: "PhenoRatio", ans: "子代表現型：3:1 (顯:隱)", options: ["子代表現型：3:1 (顯:隱)", "子代表現型：1:1", "子代表現型：100% 顯性", "子代表現型：1:2:1"] },
+        { q: "親代：Aa × aa<br><span style='font-size:0.6em'>(求表現型)</span>", type: "PhenoRatio", ans: "子代表現型：1:1 (顯:隱)", options: ["子代表現型：1:1 (顯:隱)", "子代表現型：3:1", "子代表現型：100% 隱性", "子代表現型：100% 顯性"] },
+        { q: "親代：aa × aa<br><span style='font-size:0.6em'>(求表現型)</span>", type: "PhenoRatio", ans: "子代表現型：100% 隱性", options: ["子代表現型：100% 隱性", "子代表現型：100% 顯性", "子代表現型：1:1", "子代表現型：3:1"] },
+
+        // Type 3: Reverse (Child -> Parent)
+        { q: "子代基因型：100% aa", type: "FindParent", ans: "親代：aa × aa", options: ["親代：aa × aa", "親代：Aa × aa", "親代：Aa × Aa", "親代：AA × aa"] },
+        { q: "子代基因型：100% Aa", type: "FindParent", ans: "親代：AA × aa", options: ["親代：AA × aa", "親代：AA × Aa", "親代：Aa × Aa", "親代：AA × AA"] },
+        { q: "子代表現型：3:1", type: "FindParent", ans: "親代：Aa × Aa", options: ["親代：Aa × Aa", "親代：Aa × aa", "親代：AA × Aa", "親代：AA × aa"] },
+        { q: "子代基因型：1:2:1", type: "FindParent", ans: "親代：Aa × Aa", options: ["親代：Aa × Aa", "親代：Aa × aa", "親代：AA × aa", "親代：AA × Aa"] },
+    ];
+
+    // --- State Variables ---
+    let gameState = {
+        score: 0,
+        currentQIndex: 0,
+        totalQuestions: 10,
+        currentQ: null,
+        animFrame: null,
+        userInfo: {},
+        qStartTime: 0
+    };
+
+    // --- Core Functions ---
+
+    function startGame() {
+        const cls = document.getElementById('class-id').value;
+        const seat = document.getElementById('seat-id').value;
+        if(!cls || !seat) {
+            document.getElementById('login-error').innerText = "請完整輸入班級與座號！";
+            return;
+        }
+        gameState.userInfo = { cls, seat };
+        gameState.currentQIndex = 0;
+        gameState.score = 0;
+        
+        document.getElementById('login-screen').classList.add('hidden');
+        document.getElementById('game-world').style.display = 'block';
+        
+        spawnMonster();
+    }
+
+    // UPDATED: Robust Text Formatting for specific labels
+    function formatText(text) {
+        if (text.startsWith("親代：")) {
+            const val = text.replace("親代：", "");
+            return `<div class="card-label text-parent">親代</div><div class="card-value">${val}</div>`;
+        } 
+        if (text.startsWith("子代基因型：")) {
+            const val = text.replace("子代基因型：", "");
+            return `<div class="card-label text-child">子代基因型</div><div class="card-value">${val}</div>`;
+        }
+        if (text.startsWith("子代表現型：")) {
+            const val = text.replace("子代表現型：", "");
+            return `<div class="card-label text-child">子代表現型</div><div class="card-value">${val}</div>`;
+        }
+        // Fallback/Generic
+        if (text.startsWith("子代：")) {
+            const val = text.replace("子代：", "");
+            return `<div class="card-label text-child">子代</div><div class="card-value">${val}</div>`;
+        }
+        return text;
+    }
+
+    function spawnMonster() {
+        if(gameState.currentQIndex >= gameState.totalQuestions) {
+            endGame();
+            return;
+        }
+
+        gameState.currentQIndex++;
+        document.getElementById('progress-display').innerHTML = `<i class="fas fa-flag"></i> ${gameState.currentQIndex} / ${gameState.totalQuestions}`;
+
+        // Pick random question
+        gameState.currentQ = questions[Math.floor(Math.random() * questions.length)];
+        gameState.qStartTime = Date.now(); 
+        
+        // Update UI
+        document.getElementById('q-text').innerHTML = formatText(gameState.currentQ.q);
+        
+        // Generate Weapons (Answers)
+        const rack = document.getElementById('weapon-rack');
+        rack.innerHTML = '';
+        
+        // Randomize options
+        let opts = [...gameState.currentQ.options].sort(() => Math.random() - 0.5);
+        
+        opts.forEach(opt => {
+            let btn = document.createElement('div');
+            btn.className = 'weapon-card';
+            // Inner HTML handled by formatText for layout
+            btn.innerHTML = formatText(opt);
+            btn.dataset.rawAns = opt;
+            btn.onclick = () => checkAnswer(opt, btn);
+            rack.appendChild(btn);
+        });
+    }
+
+    function checkAnswer(ans, btnEl) {
+        const timeTaken = (Date.now() - gameState.qStartTime) / 1000; // seconds
+        
+        if(ans === gameState.currentQ.ans) {
+            // Correct
+            let points = Math.max(100, Math.floor(1000 - (timeTaken * 20)));
+            gameState.score += points;
+            document.getElementById('score-display').innerText = `SCORE: ${gameState.score}`;
+            
+            playAttackAnim();
+            
+            setTimeout(spawnMonster, 600);
+            
+        } else {
+            // Wrong
+            gameState.score = Math.max(0, gameState.score - 200); 
+            document.getElementById('score-display').innerText = `SCORE: ${gameState.score}`;
+            
+            btnEl.classList.add('shake');
+            btnEl.style.backgroundColor = "#ffcdd2";
+            setTimeout(() => {
+                btnEl.classList.remove('shake');
+                btnEl.style.backgroundColor = "rgba(255,255,255,0.95)";
+            }, 500);
+        }
+    }
+
+    function playAttackAnim() {
+        const proj = document.getElementById('projectile');
+        const hit = document.getElementById('hit-fx');
+        
+        proj.style.display = 'block';
+        proj.style.animation = 'none'; // Reset
+        proj.offsetHeight; // Trigger reflow
+        proj.style.animation = 'shoot 0.3s forwards';
+        
+        setTimeout(() => {
+            proj.style.display = 'none';
+            hit.style.display = 'block';
+            setTimeout(() => hit.style.display = 'none', 200);
+        }, 300);
+    }
+
+    function endGame() {
+        document.getElementById('game-world').style.display = 'none';
+        document.getElementById('game-over-screen').classList.remove('hidden');
+        document.getElementById('final-score').innerText = gameState.score;
+        
+        submitScoreToGAS();
+    }
+
+    // --- Google Sheet Integration ---
+    function submitScoreToGAS() {
+        const statusEl = document.getElementById('submit-status');
+        
+        if (GAS_API_URL === '' || GAS_API_URL === '您的_GOOGLE_SCRIPT_URL') {
+            statusEl.innerText = "⚠️ 演示模式：分數未上傳";
+            mockLeaderboard();
+            return;
+        }
+
+        const data = {
+            cls: gameState.userInfo.cls,
+            seat: gameState.userInfo.seat,
+            score: gameState.score,
+            action: 'submit'
+        };
+
+        fetch(GAS_API_URL, {
+            method: 'POST',
+            body: JSON.stringify(data)
+        })
+        .then(response => response.json())
+        .then(json => {
+            statusEl.innerHTML = "<i class='fas fa-check-circle' style='color:green'></i> 上傳成功！";
+            renderLeaderboard(json.data);
+        })
+        .catch(err => {
+            console.error(err);
+            statusEl.innerText = "連線錯誤，無法上傳。";
+            mockLeaderboard(); 
+        });
+    }
+
+    function renderLeaderboard(list) {
+        const tbody = document.getElementById('leaderboard-body');
+        tbody.innerHTML = '';
+        
+        list.forEach((item, index) => {
+            let rankClass = '';
+            if(index === 0) rankClass = 'rank-1';
+            if(index === 1) rankClass = 'rank-2';
+            if(index === 2) rankClass = 'rank-3';
+            
+            const tr = `
+                <tr>
+                    <td class="${rankClass}">${index + 1}</td>
+                    <td>${item.cls}</td>
+                    <td>${item.seat}</td>
+                    <td>${item.score}</td>
+                </tr>
+            `;
+            tbody.innerHTML += tr;
+        });
+
+        if (gameState.score > 0) {
+            document.getElementById('next-link').classList.remove('hidden');
+        }
+    }
+
+    function mockLeaderboard() {
+        const demoData = [
+            {cls: "701", seat: "01", score: 9800},
+            {cls: "702", seat: "15", score: 8500},
+            {cls: "701", seat: "22", score: 7200},
+            {cls: gameState.userInfo.cls, seat: gameState.userInfo.seat, score: gameState.score}
+        ];
+        demoData.sort((a,b) => b.score - a.score);
+        renderLeaderboard(demoData);
+    }
+
+</script>
+</body>
+</html>

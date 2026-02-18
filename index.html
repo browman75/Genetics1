@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>孟德爾的遺傳實驗之旅</title>
+    
+    <!-- 引入 Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- 引入 Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;700&family=Comfortaa:wght@700&display=swap" rel="stylesheet">
+
+    <style>
+        :root {
+            --primary-green: #6B8E23; /* 橄欖綠 */
+            --light-green: #F0FFF0;   /* 蜜瓜綠 */
+            --earth-brown: #8B4513;   /* 土壤色 */
+            --sky-blue: #e0f7fa;
+            --text-color: #333333;
+        }
+
+        body {
+            font-family: 'Noto Sans TC', sans-serif;
+            background-color: var(--sky-blue);
+            color: var(--text-color);
+            margin: 0;
+            padding: 0;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden; /* 防止動畫超出 */
+            position: relative;
+        }
+
+        /* Background Elements */
+        .sun {
+            position: absolute;
+            top: -50px;
+            right: -50px;
+            width: 200px;
+            height: 200px;
+            background: #fbc02d;
+            border-radius: 50%;
+            box-shadow: 0 0 50px #ffeb3b;
+            animation: sunShine 5s infinite alternate;
+        }
+
+        .ground {
+            position: absolute;
+            bottom: 0;
+            width: 100%;
+            height: 100px;
+            background: var(--earth-brown);
+            border-top: 10px solid #5d4037;
+            z-index: 10;
+        }
+
+        .grass {
+            position: absolute;
+            bottom: 100px;
+            width: 100%;
+            height: 20px;
+            background: repeating-linear-gradient(
+                90deg,
+                var(--primary-green) 0px,
+                var(--primary-green) 10px,
+                transparent 10px,
+                transparent 20px
+            );
+            z-index: 9;
+        }
+
+        /* Main Content */
+        .welcome-card {
+            text-align: center;
+            z-index: 20;
+            background: rgba(255, 255, 255, 0.9);
+            padding: 40px 60px;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            border: 5px solid var(--primary-green);
+            transition: all 0.5s;
+        }
+
+        h1 {
+            color: var(--primary-green);
+            font-size: 3em;
+            margin: 0 0 20px 0;
+            text-shadow: 2px 2px 0 #fff;
+        }
+
+        p {
+            font-size: 1.2em;
+            color: #555;
+            margin-bottom: 30px;
+        }
+
+        /* Start Button */
+        .btn-start {
+            background-color: var(--primary-green);
+            color: white;
+            font-size: 1.8em;
+            padding: 15px 50px;
+            border: none;
+            border-radius: 50px;
+            cursor: pointer;
+            box-shadow: 0 8px 0 #33691e;
+            transition: all 0.2s;
+            font-family: 'Comfortaa', 'Noto Sans TC';
+            font-weight: bold;
+        }
+
+        .btn-start:hover {
+            transform: translateY(-3px);
+            background-color: #558b2f;
+            box-shadow: 0 11px 0 #33691e;
+        }
+
+        .btn-start:active {
+            transform: translateY(4px);
+            box-shadow: 0 4px 0 #33691e;
+        }
+
+        /* --- Animation Elements --- */
+        .seed {
+            position: absolute;
+            bottom: 200px; /* Start high */
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 0px;
+            color: #795548;
+            z-index: 15;
+            transition: all 0.5s;
+        }
+
+        .vine-container {
+            position: absolute;
+            bottom: 80px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 20px;
+            height: 0;
+            background: var(--primary-green);
+            z-index: 12;
+            border-radius: 10px;
+            display: flex;
+            flex-direction: column-reverse; /* Grow from bottom */
+            align-items: center;
+        }
+
+        .leaf {
+            width: 60px;
+            height: 30px;
+            background: var(--primary-green);
+            border-radius: 0 30px 0 30px;
+            position: absolute;
+            opacity: 0;
+        }
+        
+        .leaf.left { left: -50px; transform: rotate(-10deg); }
+        .leaf.right { right: -50px; transform: rotate(190deg); }
+
+        .flower-bloom {
+            position: absolute;
+            top: -40px;
+            font-size: 0;
+            color: #9c27b0; /* Purple flower */
+            z-index: 13;
+        }
+
+        /* --- Keyframes --- */
+        @keyframes sunShine {
+            from { transform: scale(1); opacity: 0.8; }
+            to { transform: scale(1.1); opacity: 1; }
+        }
+
+        @keyframes dropSeed {
+            0% { bottom: 500px; font-size: 30px; opacity: 1; }
+            60% { bottom: 110px; font-size: 30px; }
+            80% { bottom: 120px; } /* Bounce */
+            100% { bottom: 110px; font-size: 0; opacity: 0; } /* Bury */
+        }
+
+        @keyframes growVine {
+            0% { height: 0; }
+            100% { height: 120vh; } /* Grow past screen */
+        }
+
+        @keyframes leafPop {
+            0% { transform: scale(0); opacity: 0; }
+            80% { transform: scale(1.2); opacity: 1; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+
+        @keyframes flowerPop {
+            0% { font-size: 0; transform: rotate(0deg); }
+            100% { font-size: 150px; transform: rotate(360deg); }
+        }
+
+        @keyframes fadeOut {
+            to { opacity: 0; display: none; }
+        }
+
+    </style>
+</head>
+<body>
+
+    <div class="sun"></div>
+
+    <div class="welcome-card" id="card">
+        <h1><i class="fas fa-seedling"></i> 孟德爾的遺傳實驗之旅</h1>
+        <p>準備好揭開豌豆的秘密了嗎？<br>讓我們像孟德爾一樣，親手種下希望的種子。</p>
+        <button class="btn-start" onclick="startJourney()">
+            <i class="fas fa-hand-holding-medical"></i> 播種開始
+        </button>
+    </div>
+
+    <!-- Animation Stage -->
+    <div id="seed" class="seed"><i class="fas fa-cookie"></i></div>
+    
+    <div id="vine" class="vine-container">
+        <!-- Leaves will be injected here -->
+        <div class="flower-bloom" id="flower"><i class="fas fa-bahai"></i></div>
+    </div>
+
+    <div class="grass"></div>
+    <div class="ground"></div>
+
+    <script>
+        function startJourney() {
+            const card = document.getElementById('card');
+            const seed = document.getElementById('seed');
+            const vine = document.getElementById('vine');
+            const flower = document.getElementById('flower');
+
+            // 1. Hide Card
+            card.style.animation = "fadeOut 0.5s forwards";
+
+            // 2. Drop Seed Animation
+            seed.style.animation = "dropSeed 1s ease-in forwards";
+
+            // 3. Grow Vine (After seed drops)
+            setTimeout(() => {
+                // Play sound effect if desired (optional)
+                
+                // Grow Vine
+                vine.style.transition = "height 2s ease-in-out";
+                vine.style.height = "150vh"; // Grow beyond screen
+
+                // Add Leaves dynamically
+                for(let i=1; i<=10; i++) {
+                    setTimeout(() => {
+                        createLeaf(vine, i);
+                    }, i * 150);
+                }
+
+                // Bloom Flower at the end
+                setTimeout(() => {
+                    flower.style.animation = "flowerPop 1s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards";
+                    
+                    // 4. Redirect
+                    setTimeout(() => {
+                        document.body.style.transition = "opacity 1s";
+                        document.body.style.opacity = "0";
+                        setTimeout(() => {
+                            window.location.href = "mi014.html";
+                        }, 1000);
+                    }, 1500);
+
+                }, 1800);
+
+            }, 1000);
+        }
+
+        function createLeaf(container, index) {
+            const leaf = document.createElement('div');
+            leaf.className = index % 2 === 0 ? 'leaf left' : 'leaf right';
+            leaf.style.bottom = (index * 10) + '%';
+            container.appendChild(leaf);
+            
+            // Trigger animation
+            // Force reflow
+            void leaf.offsetWidth;
+            leaf.style.animation = "leafPop 0.3s forwards";
+        }
+    </script>
+</body>
+</html>

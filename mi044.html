@@ -1,0 +1,897 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>孟德爾之後：棋盤方格法</title>
+    
+    <!-- 引入 Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- 引入 Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;700&family=Comfortaa:wght@700&display=swap" rel="stylesheet">
+
+    <style>
+        :root {
+            --primary-green: #6B8E23; /* 橄欖綠 */
+            --light-green: #F0FFF0;   /* 蜜瓜綠 */
+            --earth-brown: #8B4513;   /* 土壤色 */
+            --text-color: #333333;
+            --correct-color: #4CAF50;
+            --wrong-color: #e74c3c;
+            --disabled-gray: #ccc;
+            --history-sepia: #f4ecd8; /* 仿舊紙張 */
+            --table-border: #8d6e63;
+        }
+
+        body {
+            font-family: 'Noto Sans TC', sans-serif;
+            background-color: #fcfbf4;
+            color: var(--text-color);
+            margin: 0;
+            padding: 20px;
+            line-height: 1.8;
+            font-size: 18px;
+            overscroll-behavior: none;
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            background-color: white;
+            padding: 30px;
+            border-radius: 20px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+            border: 2px solid #e0e0e0;
+        }
+
+        /* Header */
+        header {
+            text-align: center;
+            border-bottom: 3px solid var(--primary-green);
+            padding-bottom: 20px;
+            margin-bottom: 30px;
+        }
+
+        h1 {
+            color: var(--primary-green);
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+
+        .subtitle {
+            font-size: 1.2em;
+            color: #666;
+        }
+
+        /* Sections */
+        section {
+            margin-bottom: 40px;
+            padding: 25px;
+            background-color: var(--light-green);
+            border-radius: 15px;
+            border-left: 8px solid var(--primary-green);
+            transition: all 0.5s;
+        }
+
+        section.locked {
+            opacity: 0.5;
+            pointer-events: none;
+            filter: grayscale(0.8);
+        }
+
+        h2 {
+            color: var(--earth-brown);
+            display: flex;
+            align-items: center;
+            font-size: 1.8em;
+            margin-top: 0;
+        }
+
+        h2 i { margin-right: 15px; color: var(--primary-green); }
+
+        /* --- Part 1: History Timeline --- */
+        .timeline-container {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 30px;
+            position: relative;
+        }
+
+        .timeline-container::before {
+            content: '';
+            position: absolute;
+            top: 40px;
+            left: 50px;
+            right: 50px;
+            height: 4px;
+            background: #ccc;
+            z-index: 0;
+        }
+
+        .time-card {
+            background: var(--history-sepia);
+            border: 2px solid #d7ccc8;
+            border-radius: 10px;
+            width: 30%;
+            padding: 20px;
+            text-align: center;
+            cursor: pointer;
+            position: relative;
+            z-index: 1;
+            transition: all 0.3s;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+
+        .time-card:hover { transform: translateY(-5px); }
+        
+        .time-card.revealed {
+            background: white;
+            border-color: var(--primary-green);
+        }
+
+        .year-badge {
+            background: var(--earth-brown);
+            color: white;
+            padding: 5px 15px;
+            border-radius: 20px;
+            display: inline-block;
+            margin-bottom: 10px;
+            font-weight: bold;
+            font-family: 'Comfortaa', cursive;
+        }
+
+        .card-content {
+            display: none;
+            font-size: 0.95em;
+            color: #444;
+            animation: fadeIn 0.5s;
+        }
+        
+        .card-content.show { display: block; }
+        
+        .hidden-hint { font-size: 0.8em; color: #888; margin-top: 10px; }
+
+        /* --- Common Punnett Styles (Used in Part 2 & 3) --- */
+        .punnett-workspace {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            border: 3px dashed #ccc;
+            margin-top: 20px;
+            position: relative;
+        }
+
+        .step-indicator {
+            background: #e0f2f1;
+            color: #00695c;
+            padding: 5px 15px;
+            border-radius: 5px;
+            font-weight: bold;
+            margin-bottom: 20px;
+            display: inline-block;
+        }
+        
+        .instruction-banner {
+            background: #fff3e0;
+            color: #e65100;
+            width: 90%;
+            padding: 10px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            font-size: 0.95em;
+            text-align: center;
+            border: 1px solid #ffe0b2;
+        }
+
+        .grid-wrapper {
+            display: grid;
+            grid-template-columns: 60px 100px 100px;
+            grid-template-rows: 60px 100px 100px;
+            gap: 10px;
+            align-items: center;
+            justify-items: center;
+        }
+
+        .header-cell {
+            width: 80px; height: 80px;
+            border: 2px dashed #999;
+            border-radius: 50%;
+            display: flex; justify-content: center; align-items: center;
+            font-family: 'Comfortaa', cursive;
+            font-weight: bold; font-size: 1.5em;
+            background: #f9f9f9;
+            transition: all 0.3s;
+            position: relative; z-index: 5;
+        }
+        
+        .header-cell.filled {
+            border-style: solid; border-color: var(--primary-green);
+            background: var(--light-green); color: var(--primary-green);
+        }
+        
+        .header-cell.draggable-source {
+            cursor: grab;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            animation: pulse 2s infinite;
+        }
+        .header-cell.draggable-source:active { cursor: grabbing; }
+
+        .corner-label { font-size: 0.8em; text-align: center; color: #888; }
+
+        .grid-cell {
+            width: 100%; height: 100%;
+            background: #f0f0f0;
+            border: 2px solid #ddd;
+            border-radius: 10px;
+            display: flex; justify-content: center; align-items: center;
+            font-family: 'Comfortaa', cursive;
+            font-size: 1.5em; font-weight: bold;
+            transition: all 0.2s;
+            position: relative; overflow: hidden;
+            flex-direction: row; gap: 5px;
+        }
+
+        .grid-cell.active-target { border: 2px dashed var(--primary-green); background: #e8f5e9; }
+        .grid-cell.complete { background: white; border: 2px solid var(--primary-green); color: var(--text-color); }
+
+        .gene-part { opacity: 0.3; transform: scale(0.8); transition: all 0.3s; }
+        .gene-part.present { opacity: 1; transform: scale(1.1); color: var(--primary-green); }
+
+        .source-container {
+            margin-top: 30px; padding: 15px;
+            background: #fff8e1; border-radius: 10px;
+            text-align: center; width: 80%;
+        }
+
+        .gene-source {
+            display: inline-block;
+            width: 50px; height: 50px; line-height: 45px;
+            border-radius: 50%;
+            background: var(--primary-green); color: white;
+            font-family: 'Comfortaa', cursive; font-weight: bold; font-size: 1.5em;
+            margin: 0 10px; cursor: grab;
+            box-shadow: 0 4px 0 #4a6616;
+        }
+        .gene-source:active { transform: translateY(2px); box-shadow: none; cursor: grabbing; }
+
+        .results-panel {
+            margin-top: 20px; text-align: center; display: none; width: 100%; animation: fadeIn 0.5s;
+        }
+
+        .analysis-box {
+            background: #f9fbe7; padding: 20px;
+            border-radius: 15px; border: 2px solid #c0ca33;
+            text-align: center;
+        }
+
+        .ratio-input {
+            width: 60px; padding: 5px;
+            font-size: 1.2em; text-align: center;
+            border: 2px solid #ccc; border-radius: 5px;
+            margin: 0 5px; font-family: 'Comfortaa', cursive;
+            font-weight: bold; color: #555;
+        }
+        .ratio-input:focus { border-color: var(--primary-green); outline: none; background: #fff; }
+
+        .input-row { display: flex; justify-content: center; align-items: center; font-weight: bold; font-size: 1.2em; margin: 15px 0; color: #555; }
+        
+        .ratio-group h4 { margin: 0 0 10px 0; color: var(--earth-brown); }
+
+        /* --- Part 3: Challenge Table --- */
+        .summary-section {
+            margin-top: 30px;
+            width: 100%;
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+            font-size: 0.9em;
+        }
+
+        th, td {
+            border: 1px solid #ddd;
+            padding: 12px;
+            text-align: center;
+        }
+
+        th {
+            background-color: var(--earth-brown);
+            color: white;
+        }
+
+        tr:nth-child(even) { background-color: #f9f9f9; }
+        
+        /* Mini Grid in Table */
+        .mini-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2px;
+            width: 40px;
+            margin: 0 auto;
+            border: 1px solid #ccc;
+            padding: 2px;
+            background: white;
+        }
+        .mini-cell {
+            background: #e8f5e9;
+            font-size: 0.7em;
+            font-weight: bold;
+            color: var(--primary-green);
+            text-align: center;
+        }
+
+        /* Mission Control */
+        .mission-header {
+            background: var(--earth-brown);
+            color: white;
+            padding: 10px 20px;
+            border-radius: 50px;
+            display: inline-block;
+            margin-bottom: 20px;
+            font-weight: bold;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.2);
+        }
+
+        /* Nav */
+        .action-btn {
+            background-color: var(--earth-brown); color: white; border: none; padding: 10px 30px; border-radius: 50px; font-size: 1.1em; cursor: pointer; transition: all 0.3s; margin-top: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        .action-btn:hover { background-color: #5D4037; transform: scale(1.05); }
+        .action-btn:disabled { background-color: var(--disabled-gray); cursor: not-allowed; transform: none; box-shadow: none; }
+
+        .footer-nav { text-align: center; margin-top: 50px; padding-top: 20px; border-top: 2px solid #eee; }
+        .next-btn { display: inline-block; background-color: var(--primary-green); color: white; padding: 15px 40px; font-size: 1.5em; border-radius: 50px; text-decoration: none; box-shadow: 0 5px 15px rgba(107, 142, 35, 0.4); transition: all 0.3s; border: none; cursor: pointer; opacity: 0.5; pointer-events: none; }
+        .next-btn.active { opacity: 1; pointer-events: auto; background-color: #556B2F; }
+
+        /* Animations */
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes pop { 0% { transform: scale(0.5); } 100% { transform: scale(1); } }
+        @keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(107, 142, 35, 0.4); } 70% { box-shadow: 0 0 0 10px rgba(107, 142, 35, 0); } 100% { box-shadow: 0 0 0 0 rgba(107, 142, 35, 0); } }
+
+        /* Navigation Confirmation Modal */
+        .nav-modal {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.6);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 2000;
+            display: none;
+        }
+
+        .nav-modal-content {
+            background: white;
+            padding: 30px;
+            border-radius: 20px;
+            text-align: center;
+            max-width: 500px;
+            width: 90%;
+            border: 5px solid var(--earth-brown);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+            animation: pop 0.3s;
+        }
+
+        .nav-modal-options {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            margin-top: 25px;
+        }
+
+        /* IMPORTANT: Hidden class MUST be last to override flex */
+        .hidden { display: none !important; }
+
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <header>
+        <h1><i class="fas fa-book-journal-whills"></i> 孟德爾之後：遺傳學的誕生</h1>
+        <div class="subtitle">單元四：歷史與工具 (課本 P.42)</div>
+    </header>
+
+    <!-- Part 1: History -->
+    <section id="section-history">
+        <h2><i class="fas fa-history"></i> 1. 被遺忘的先驅</h2>
+        <p>孟德爾的研究在當時並沒有馬上被重視。請點擊下方的年代，看看發生了什麼事：</p>
+        
+        <div class="timeline-container">
+            <div class="time-card" onclick="revealCard(this, 1)">
+                <div class="year-badge">1865 年</div>
+                <div class="hidden-hint"><i class="fas fa-search"></i> 點擊揭曉</div>
+                <div class="card-content">
+                    <i class="fas fa-file-signature" style="font-size:2em; color:#8d6e63; margin-bottom:10px;"></i><br>
+                    <b>發表論文</b><br>
+                    孟德爾發表豌豆研究，但當時科學界正熱衷於演化論，沒人聽得懂他的數學分析。
+                </div>
+            </div>
+            
+            <div class="time-card" onclick="revealCard(this, 2)">
+                <div class="year-badge">1884 年</div>
+                <div class="hidden-hint"><i class="fas fa-search"></i> 點擊揭曉</div>
+                <div class="card-content">
+                    <i class="fas fa-cross" style="font-size:2em; color:#555; margin-bottom:10px;"></i><br>
+                    <b>默默辭世</b><br>
+                    孟德爾在遺憾中過世，他的研究成果像是被埋藏的寶藏，無人問津。
+                </div>
+            </div>
+
+            <div class="time-card" onclick="revealCard(this, 3)">
+                <div class="year-badge">1900 年</div>
+                <div class="hidden-hint"><i class="fas fa-search"></i> 點擊揭曉</div>
+                <div class="card-content">
+                    <i class="fas fa-lightbulb" style="font-size:2em; color:#fbc02d; margin-bottom:10px;"></i><br>
+                    <b>重新發現</b><br>
+                    三位科學家分別獨立發現了相同的遺傳法則，證實孟德爾是對的！尊稱他為<b>「遺傳學之父」</b>。
+                </div>
+            </div>
+        </div>
+        <div id="history-feedback" style="text-align:center; margin-top:20px; font-weight:bold; color:var(--primary-green);"></div>
+    </section>
+
+    <!-- Part 2: Punnett Square Training -->
+    <section id="section-punnett" class="locked">
+        <h2><i class="fas fa-th"></i> 2. 棋盤方格法特訓</h2>
+        <p>為了更方便預測遺傳結果，科學家龐安奈特發明了這個表格。讓我們用 <b>Tt (高莖) × Tt (高莖)</b> 來練習。</p>
+        
+        <div class="punnett-workspace" id="workspace-tutorial">
+            <div class="step-indicator" id="step-label-tut">步驟 1：填入配子</div>
+            <div class="instruction-banner" id="tut-instruction">
+                <i class="fas fa-hand-pointer"></i> 請按住下方的配子 (T, t)，將其<b>拖曳</b>到表格外側的圓框中。
+            </div>
+            
+            <div class="grid-wrapper">
+                <!-- R1 -->
+                <div class="corner-label">精子&#8594;<br>卵子&#8595;</div>
+                <div class="header-cell target-zone t-zone" id="tut-top-1" data-pos="top" data-idx="1" data-expect="T"></div>
+                <div class="header-cell target-zone t-zone" id="tut-top-2" data-pos="top" data-idx="2" data-expect="t"></div>
+                
+                <!-- R2 -->
+                <div class="header-cell target-zone t-zone" id="tut-left-1" data-pos="left" data-idx="1" data-expect="T"></div>
+                <div class="grid-cell t-cell" id="tut-c1" data-row="1" data-col="1"><span class="gene-part" id="tut-c1-left">?</span><span class="gene-part" id="tut-c1-top">?</span></div>
+                <div class="grid-cell t-cell" id="tut-c2" data-row="1" data-col="2"><span class="gene-part" id="tut-c2-left">?</span><span class="gene-part" id="tut-c2-top">?</span></div>
+                
+                <!-- R3 -->
+                <div class="header-cell target-zone t-zone" id="tut-left-2" data-pos="left" data-idx="2" data-expect="t"></div>
+                <div class="grid-cell t-cell" id="tut-c3" data-row="2" data-col="1"><span class="gene-part" id="tut-c3-left">?</span><span class="gene-part" id="tut-c3-top">?</span></div>
+                <div class="grid-cell t-cell" id="tut-c4" data-row="2" data-col="2"><span class="gene-part" id="tut-c4-left">?</span><span class="gene-part" id="tut-c4-top">?</span></div>
+            </div>
+
+            <!-- Gamete Source -->
+            <div class="source-container" id="tut-source">
+                <p>親代配子來源 (Tt x Tt)：</p>
+                <div>
+                    <div class="gene-source" draggable="true">T</div>
+                    <div class="gene-source" draggable="true" style="background:#81c784;">t</div>
+                </div>
+            </div>
+
+            <!-- Analysis Box -->
+            <div class="results-panel" id="tut-analysis">
+                <div class="analysis-box">
+                    <p style="margin-bottom:15px;"><i class="fas fa-lightbulb" style="color:orange;"></i> 提示：TT, Tt 為顯性(高)；tt 為隱性(矮)</p>
+                    <div class="ratio-group">
+                        <h4>基因型比例 (TT : Tt : tt)</h4>
+                        <div class="input-row">
+                            <input type="number" id="tut-g1" class="ratio-input" min="0"> : <input type="number" id="tut-g2" class="ratio-input" min="0"> : <input type="number" id="tut-g3" class="ratio-input" min="0">
+                        </div>
+                    </div>
+                    <div class="ratio-group">
+                        <h4>表現型比例 (高 : 矮)</h4>
+                        <div class="input-row">
+                            <input type="number" id="tut-p1" class="ratio-input" min="0"> : <input type="number" id="tut-p2" class="ratio-input" min="0">
+                        </div>
+                    </div>
+                    <button class="action-btn" onclick="checkTutorial()">送出分析</button>
+                </div>
+                <div id="tut-feedback" style="margin-top:10px; font-weight:bold;"></div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Part 3: The 6 Combinations Challenge -->
+    <section id="section-challenge" class="locked">
+        <h2><i class="fas fa-flask"></i> 3. 實戰演練：六種可能性</h2>
+        <p>遺傳學家需要熟悉各種組合。請完成下列 6 個任務，並將結果記錄在表格中。</p>
+        
+        <div class="punnett-workspace" id="workspace-challenge" style="border-color:var(--earth-brown);">
+            <div class="mission-header" id="mission-title">任務 1/6：TT × TT</div>
+            
+            <div class="grid-wrapper">
+                <!-- R1 -->
+                <div class="corner-label">精子&#8594;<br>卵子&#8595;</div>
+                <div class="header-cell target-zone c-zone" id="ch-top-1" data-pos="top" data-idx="1"></div>
+                <div class="header-cell target-zone c-zone" id="ch-top-2" data-pos="top" data-idx="2"></div>
+                
+                <!-- R2 -->
+                <div class="header-cell target-zone c-zone" id="ch-left-1" data-pos="left" data-idx="1"></div>
+                <div class="grid-cell c-cell" id="ch-c1" data-row="1" data-col="1"><span class="gene-part" id="ch-c1-left">?</span><span class="gene-part" id="ch-c1-top">?</span></div>
+                <div class="grid-cell c-cell" id="ch-c2" data-row="1" data-col="2"><span class="gene-part" id="ch-c2-left">?</span><span class="gene-part" id="ch-c2-top">?</span></div>
+                
+                <!-- R3 -->
+                <div class="header-cell target-zone c-zone" id="ch-left-2" data-pos="left" data-idx="2"></div>
+                <div class="grid-cell c-cell" id="ch-c3" data-row="2" data-col="1"><span class="gene-part" id="ch-c3-left">?</span><span class="gene-part" id="ch-c3-top">?</span></div>
+                <div class="grid-cell c-cell" id="ch-c4" data-row="2" data-col="2"><span class="gene-part" id="ch-c4-left">?</span><span class="gene-part" id="ch-c4-top">?</span></div>
+            </div>
+
+            <!-- Source -->
+            <div class="source-container" id="ch-source">
+                <p id="ch-instruction">請拖曳親代基因填滿表格 (親代：<span id="parents-text">T, T x T, T</span>)</p>
+                <div>
+                    <div class="gene-source" draggable="true">T</div>
+                    <div class="gene-source" draggable="true" style="background:#81c784;">t</div>
+                </div>
+            </div>
+
+            <div id="ch-next-area" style="display:none; margin-top:20px;">
+                <p style="color:var(--primary-green); font-weight:bold;"><i class="fas fa-check"></i> 紀錄完成！</p>
+                <button class="action-btn" onclick="nextMission()">進入下一關 <i class="fas fa-arrow-right"></i></button>
+            </div>
+        </div>
+
+        <!-- Summary Table -->
+        <div class="summary-section">
+            <h3><i class="fas fa-clipboard-list"></i> 實驗紀錄表</h3>
+            <table id="summary-table">
+                <thead>
+                    <tr>
+                        <th width="20%">親代組合</th>
+                        <th width="20%">棋盤方格</th>
+                        <th width="30%">子代基因型<br>(TT:Tt:tt)</th>
+                        <th width="30%">子代表現型<br>(高:矮)</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <!-- Rows will be added here -->
+                </tbody>
+            </table>
+        </div>
+
+    </section>
+
+    <!-- Navigation Confirmation Modal -->
+    <div id="nav-modal" class="nav-modal">
+        <div class="nav-modal-content">
+            <h3 style="color:var(--earth-brown);"><i class="fas fa-clipboard-check"></i> 學習單檢查</h3>
+            <p style="font-size:1.2em; margin: 20px 0;">請問你是否已經將實驗結果<br>完整記錄在學習單上了呢？</p>
+            <div class="nav-modal-options">
+                <button class="action-btn" onclick="closeNavModal()" style="background:#999;">尚未完成 (返回)</button>
+                <button class="action-btn" onclick="proceedToNextLevel()">已經完成 (前往下一關)</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Nav -->
+    <div class="footer-nav">
+        <a href="javascript:void(0)" onclick="showNavModal()" class="next-btn" id="next-btn">
+            前往下一關：小小孟德爾實驗室 <i class="fas fa-arrow-right"></i>
+        </a>
+    </div>
+
+</div>
+
+<script>
+    // --- Global Helpers ---
+    function enableDrag(sources) {
+        sources.forEach(src => {
+            src.addEventListener('dragstart', e => { e.dataTransfer.setData('val', e.target.innerText); });
+            // Touch support simplified
+            src.addEventListener('touchstart', e => { 
+                e.preventDefault(); 
+                window.touchVal = e.target.innerText;
+                src.style.opacity = 0.5;
+            });
+            src.addEventListener('touchend', e => { src.style.opacity = 1; });
+        });
+    }
+
+    // --- Part 1: History ---
+    let historyCount = 0;
+    function revealCard(card, id) {
+        if (card.classList.contains('revealed')) return;
+        
+        card.classList.add('revealed');
+        card.querySelector('.hidden-hint').style.display = 'none';
+        card.querySelector('.card-content').classList.add('show');
+        
+        historyCount++;
+        if (historyCount === 3) {
+            document.getElementById('history-feedback').innerText = "歷史解鎖完成！進入特訓！";
+            setTimeout(() => {
+                const s = document.getElementById('section-punnett');
+                s.classList.remove('locked');
+                s.scrollIntoView({behavior: "smooth", block: "center"});
+            }, 1000);
+        }
+    }
+
+    // --- Part 2: Tutorial Logic ---
+    let tutGametes = 0;
+    let tutCells = 0;
+    
+    // Setup Tutorial Drag
+    const tutSources = document.querySelectorAll('#tut-source .gene-source');
+    enableDrag(tutSources);
+
+    const tutHeaders = document.querySelectorAll('.t-zone');
+    tutHeaders.forEach(tgt => {
+        tgt.addEventListener('dragover', e => e.preventDefault());
+        tgt.addEventListener('drop', e => {
+            e.preventDefault();
+            const val = e.dataTransfer.getData('val');
+            fillHeader(tgt, val, 'tut');
+        });
+        // Touch drop
+        tgt.addEventListener('touchend', e => {
+            if(window.touchVal) fillHeader(tgt, window.touchVal, 'tut');
+            window.touchVal = null;
+        });
+    });
+
+    function fillHeader(tgt, val, mode) {
+        if(tgt.classList.contains('filled')) return;
+        
+        // Strict Validation for Challenge Mode
+        if (mode === 'challenge') {
+            const m = missions[currentMissionIdx];
+            let expectIndex = -1;
+            // Map grid position to genes array index: Top1(0), Top2(1), Left1(2), Left2(3)
+            if (tgt.dataset.pos === 'top') expectIndex = parseInt(tgt.dataset.idx) - 1; // 1->0, 2->1
+            else expectIndex = parseInt(tgt.dataset.idx) + 1; // 1->2, 2->3
+            
+            const expectedVal = m.genes[expectIndex];
+            if (val !== expectedVal) {
+                alert(`配子錯誤！請依照任務提示的親代組合放入 (例如 ${m.p})`);
+                return;
+            }
+        }
+        // Validation for Tutorial (Hardcoded Tt x Tt)
+        else if (mode === 'tut') {
+            const expect = tgt.dataset.expect;
+            if(val !== expect) { alert(`這裡應該放 ${expect} 喔 (Tt x Tt)`); return; }
+        }
+        
+        tgt.innerText = val;
+        tgt.classList.add('filled');
+        tgt.setAttribute('draggable', 'true');
+        tgt.classList.add('draggable-source'); // Enable step 2 drag
+        
+        // Add drag event for Step 2
+        tgt.addEventListener('dragstart', e => {
+            e.dataTransfer.setData('val', val);
+            e.dataTransfer.setData('pos', tgt.dataset.pos);
+            e.dataTransfer.setData('idx', tgt.dataset.idx);
+        });
+
+        if(mode === 'tut') {
+            tutGametes++;
+            if(tutGametes === 4) {
+                document.getElementById('step-label-tut').innerText = "步驟 2：組合基因";
+                document.getElementById('tut-instruction').innerHTML = "<i class='fas fa-th'></i> 配子準備就緒！請按住外側配子，<b>拖曳</b>進入表格中的 4 個空格進行配對。";
+                document.getElementById('tut-source').style.display = 'none';
+                initGridDrop('tut');
+            }
+        } else {
+            // Challenge mode logic
+            checkChallengeGametes();
+        }
+    }
+
+    function initGridDrop(mode) {
+        const cells = document.querySelectorAll(mode === 'tut' ? '.t-cell' : '.c-cell');
+        cells.forEach(cell => {
+            cell.addEventListener('dragover', e => e.preventDefault());
+            cell.addEventListener('drop', e => {
+                e.preventDefault();
+                const val = e.dataTransfer.getData('val');
+                const pos = e.dataTransfer.getData('pos');
+                const idx = e.dataTransfer.getData('idx');
+                if(pos) handleGridDrop(cell, val, pos, idx, mode);
+            });
+        });
+    }
+
+    function handleGridDrop(cell, val, pos, idx, mode) {
+        if (cell.classList.contains('filled')) return;
+        const cRow = cell.dataset.row;
+        const cCol = cell.dataset.col;
+        
+        // Validation: Top drops to col, Left drops to row
+        if ((pos === 'top' && idx === cCol) || (pos === 'left' && idx === cRow)) {
+            const partId = `${cell.id}-${pos}`;
+            const partEl = document.getElementById(partId);
+            if(!partEl.classList.contains('present')) {
+                partEl.innerText = val;
+                partEl.classList.add('present');
+                checkCellComplete(cell, mode);
+            }
+        }
+    }
+
+    function checkCellComplete(cell, mode) {
+        const top = cell.querySelector('[id$="-top"]');
+        const left = cell.querySelector('[id$="-left"]');
+        if(top.classList.contains('present') && left.classList.contains('present')) {
+            let res = left.innerText + top.innerText;
+            if(res === 'tT') res = 'Tt';
+            cell.innerText = res;
+            cell.classList.add('filled');
+            
+            if(mode === 'tut') {
+                tutCells++;
+                if(tutCells === 4) {
+                    document.getElementById('step-label-tut').innerText = "步驟 3：分析結果";
+                    document.getElementById('tut-instruction').innerHTML = "<i class='fas fa-chart-pie'></i> 表格完成了！請觀察格子裡的基因型，計算出它們的比例。";
+                    document.getElementById('tut-analysis').style.display = 'block';
+                }
+            } else {
+                challengeCells++;
+                if(challengeCells === 4) {
+                    finishMission();
+                }
+            }
+        }
+    }
+
+    function checkTutorial() {
+        const g1 = document.getElementById('tut-g1').value; // TT
+        const g2 = document.getElementById('tut-g2').value; // Tt
+        const g3 = document.getElementById('tut-g3').value; // tt
+        const p1 = document.getElementById('tut-p1').value; // High
+        const p2 = document.getElementById('tut-p2').value; // Short
+        
+        if(g1==1 && g2==2 && g3==1 && p1==3 && p2==1) {
+            document.getElementById('tut-feedback').innerHTML = "<span style='color:var(--correct-color)'>完全正確！恭喜通過特訓！</span>";
+            setTimeout(() => {
+                const s = document.getElementById('section-challenge');
+                s.classList.remove('locked');
+                s.scrollIntoView({behavior: "smooth", block: "center"});
+                startMission(0);
+            }, 1000);
+        } else {
+            document.getElementById('tut-feedback').innerHTML = "<span style='color:var(--wrong-color)'>數值不對喔，再數數看！(Tt x Tt)</span>";
+        }
+    }
+
+    // --- Part 3: Challenge Logic ---
+    const missions = [
+        { p: "TT × TT", genes: ['T','T','T','T'] },
+        { p: "TT × Tt", genes: ['T','T','T','t'] },
+        { p: "TT × tt", genes: ['T','T','t','t'] },
+        { p: "Tt × Tt", genes: ['T','t','T','t'] },
+        { p: "Tt × tt", genes: ['T','t','t','t'] },
+        { p: "tt × tt", genes: ['t','t','t','t'] }
+    ];
+    let currentMissionIdx = 0;
+    let challengeGametes = 0;
+    let challengeCells = 0;
+
+    // Setup Challenge Drag Source
+    const chSources = document.querySelectorAll('#ch-source .gene-source');
+    enableDrag(chSources);
+    
+    // Setup Headers Drop
+    const chHeaders = document.querySelectorAll('.c-zone');
+    chHeaders.forEach(tgt => {
+        tgt.addEventListener('dragover', e => e.preventDefault());
+        tgt.addEventListener('drop', e => {
+            e.preventDefault();
+            const val = e.dataTransfer.getData('val');
+            fillHeader(tgt, val, 'challenge');
+        });
+    });
+
+    function startMission(idx) {
+        currentMissionIdx = idx;
+        const m = missions[idx];
+        
+        const titleEl = document.getElementById('mission-title');
+        if(titleEl) titleEl.innerText = `任務 ${idx+1}/6：${m.p}`;
+        
+        const instructionEl = document.getElementById('ch-instruction');
+        if(instructionEl) {
+            instructionEl.innerHTML = `請拖曳親代基因填滿表格 (親代：<span id="parents-text">${m.genes.join(', ')}</span>)`;
+        }
+        
+        resetChallengeGrid();
+    }
+
+    function resetChallengeGrid() {
+        challengeGametes = 0;
+        challengeCells = 0;
+        document.querySelectorAll('.c-zone').forEach(el => {
+            el.innerText = ''; el.classList.remove('filled', 'draggable-source'); el.setAttribute('draggable', 'false');
+        });
+        document.querySelectorAll('.c-cell').forEach(el => {
+            el.innerText = ''; el.classList.remove('filled');
+            el.innerHTML = `<span class="gene-part" id="${el.id}-left">?</span><span class="gene-part" id="${el.id}-top">?</span>`;
+        });
+        document.getElementById('ch-source').style.display = 'block';
+        document.getElementById('ch-next-area').style.display = 'none';
+    }
+
+    function checkChallengeGametes() {
+        challengeGametes++;
+        if(challengeGametes === 4) {
+            document.getElementById('ch-instruction').innerText = "配子填寫完成！現在將它們拖入格子組合！";
+            document.getElementById('ch-source').style.display = 'none';
+            initGridDrop('challenge');
+        }
+    }
+
+    function finishMission() {
+        // Log to table
+        const m = missions[currentMissionIdx];
+        const cells = Array.from(document.querySelectorAll('.c-cell')).map(c => c.innerText);
+        
+        // Analyze results
+        let counts = { 'TT': 0, 'Tt': 0, 'tt': 0 };
+        cells.forEach(x => counts[x] = (counts[x] || 0) + 1);
+        
+        // Formatter: 0 -> '無'
+        const fmt = (n) => n === 0 ? '無' : n;
+        
+        // Genotype string
+        let gStr = `TT:Tt:tt = ${fmt(counts['TT'])}:${fmt(counts['Tt'])}:${fmt(counts['tt'])}`;
+        
+        // Phenotype string
+        let tall = counts['TT'] + counts['Tt'];
+        let short = counts['tt'];
+        let pStr = `高:矮 = ${fmt(tall)}:${fmt(short)}`;
+
+        // Mini grid visual
+        let gridVis = `<div class="mini-grid">${cells.map(c=>`<div class="mini-cell">${c}</div>`).join('')}</div>`;
+
+        const row = `<tr><td>${m.p}</td><td>${gridVis}</td><td>${gStr}</td><td>${pStr}</td></tr>`;
+        document.querySelector('#summary-table tbody').innerHTML += row;
+
+        document.getElementById('ch-next-area').style.display = 'block';
+    }
+
+    function nextMission() {
+        if (currentMissionIdx < 5) {
+            startMission(currentMissionIdx + 1);
+        } else {
+            // All Done
+            const titleEl = document.getElementById('mission-title');
+            if(titleEl) titleEl.innerText = "全數完成！";
+            
+            document.getElementById('workspace-challenge').innerHTML = "<h3 style='color:var(--primary-green)'>恭喜！你已經掌握了所有組合！</h3><p>看看下方的表格，這是你親手建立的遺傳資料庫。</p>";
+            document.getElementById('next-btn').classList.add('active');
+            document.body.style.transition = "background-color 1s";
+            document.body.style.backgroundColor = "#e8f5e9";
+        }
+    }
+
+    // --- Navigation Confirmation Modal Logic ---
+    function showNavModal() {
+        if (!document.getElementById('next-btn').classList.contains('active')) return;
+        document.getElementById('nav-modal').style.display = 'flex';
+    }
+
+    function closeNavModal() {
+        document.getElementById('nav-modal').style.display = 'none';
+    }
+
+    function proceedToNextLevel() {
+        window.location.href = 'mi058.html';
+    }
+
+    // Animation
+    const styleSheet = document.createElement("style");
+    styleSheet.innerText = `@keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(107, 142, 35, 0.4); } 70% { box-shadow: 0 0 0 10px rgba(107, 142, 35, 0); } 100% { box-shadow: 0 0 0 0 rgba(107, 142, 35, 0); } }`;
+    document.head.appendChild(styleSheet);
+
+</script>
+</body>
+</html>

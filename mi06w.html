@@ -1,0 +1,880 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>遺傳法則的快速判斷法</title>
+    
+    <!-- 引入 Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- 引入 Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;700&family=Comfortaa:wght@700&display=swap" rel="stylesheet">
+
+    <style>
+        :root {
+            --primary-green: #6B8E23;
+            --light-green: #F0FFF0;
+            --earth-brown: #8B4513;
+            --text-color: #333333;
+            --correct-color: #2e7d32;
+            --wrong-color: #c62828;
+            --highlight-yellow: #fff9c4;
+            --purple-flower: #9c27b0;
+        }
+
+        body {
+            font-family: 'Noto Sans TC', sans-serif;
+            background-color: #fcfbf4;
+            color: var(--text-color);
+            margin: 0;
+            padding: 20px;
+            line-height: 1.8;
+            font-size: 19px;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background-color: white;
+            padding: 40px;
+            border-radius: 20px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+            border: 2px solid #e0e0e0;
+        }
+
+        header {
+            text-align: center;
+            border-bottom: 3px solid var(--primary-green);
+            padding-bottom: 20px;
+            margin-bottom: 30px;
+        }
+
+        h1 { color: var(--primary-green); font-size: 2.2em; margin-bottom: 10px; }
+        .subtitle { font-size: 1.1em; color: #666; font-weight: bold; }
+
+        /* Case Section Styles */
+        .case-section {
+            background: white;
+            border: 2px solid #ddd;
+            border-radius: 15px;
+            padding: 25px;
+            margin-bottom: 30px;
+            position: relative;
+            transition: all 0.5s;
+            opacity: 1;
+        }
+
+        .case-section.locked {
+            opacity: 0.5;
+            pointer-events: none;
+            filter: grayscale(0.8);
+            height: 150px;
+            overflow: hidden;
+        }
+        
+        .case-section.locked::after {
+            content: "🔒 請先完成上一題";
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(200,200,200,0.3);
+            display: flex; align-items: center; justify-content: center;
+            font-size: 1.5em; font-weight: bold; color: #555;
+        }
+
+        .case-header {
+            display: flex; align-items: center; gap: 15px; margin-bottom: 15px;
+            background: var(--light-green); padding: 10px 20px; border-radius: 10px;
+        }
+        
+        .case-badge {
+            background: var(--earth-brown); color: white; padding: 5px 15px;
+            border-radius: 20px; font-weight: bold; font-size: 0.9em;
+        }
+
+        .tip-box {
+            background: var(--highlight-yellow);
+            border-left: 5px solid #fbc02d;
+            padding: 15px;
+            margin: 15px 0;
+            font-size: 0.95em;
+        }
+
+        /* Pedigree Chart Styles (Family Tree) */
+        .pedigree-tree {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin: 20px 0;
+            position: relative;
+        }
+
+        .generation {
+            display: flex;
+            justify-content: center;
+            gap: 100px;
+            position: relative;
+            z-index: 2;
+        }
+
+        .individual {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            position: relative;
+        }
+
+        .flower-icon { font-size: 3.5em; transition: all 0.3s; }
+        .flower-purple { color: var(--purple-flower); filter: drop-shadow(2px 2px 2px rgba(0,0,0,0.2)); }
+        .flower-white { color: #f5f5f5; text-shadow: 0 0 1px #333; filter: drop-shadow(2px 2px 2px rgba(0,0,0,0.1)); }
+
+        .shape {
+            width: 60px; height: 60px;
+            border: 3px solid #333;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 1.2em; font-weight: bold;
+            background: white;
+            transition: all 0.3s;
+        }
+        
+        .shape.circle { border-radius: 50%; } 
+        .shape.square { border-radius: 5px; } 
+        .shape.short { background: #a5d6a7; color: #333; height: 35px; margin-top: 15px; }
+
+        .genotype-label {
+            font-family: 'Comfortaa', cursive;
+            margin-top: 8px;
+            font-weight: bold;
+            min-height: 28px;
+            background: rgba(255,255,255,0.8);
+            padding: 2px 10px;
+            border-radius: 5px;
+            border: 1px dashed #ccc;
+            position: relative; /* For drop zone positioning */
+        }
+        
+        .genotype-label.active-drop {
+            border: 2px dashed var(--earth-brown);
+            background: #fff3e0;
+            transform: scale(1.1);
+        }
+        
+        .genotype-label.filled {
+            border: 2px solid var(--correct-color);
+            background: #e8f5e9;
+        }
+
+        .marriage-line {
+            position: absolute; top: 30px; left: 50%; transform: translateX(-50%); width: 100px; height: 3px; background: #333; z-index: 1;
+        }
+
+        .descent-line {
+            width: 3px; height: 50px; background: #333; margin: -10px auto 0 auto; position: relative; z-index: 0;
+        }
+        
+        /* Logic Buttons & Controls */
+        .logic-btn-group { display: flex; gap: 15px; justify-content: center; margin-top: 15px; flex-wrap: wrap;}
+        .logic-btn {
+            padding: 10px 20px; border: 2px solid #ccc; background: white; border-radius: 30px; cursor: pointer; transition: 0.3s; font-weight: bold;
+            display: flex; align-items: center; gap: 8px;
+        }
+        .logic-btn:hover { background: #eee; transform: translateY(-2px); }
+        .logic-btn.active { border-color: var(--earth-brown); background: #fff3e0; }
+        .logic-btn.correct { background: #e8f5e9; border-color: var(--correct-color); color: var(--correct-color); }
+        .logic-btn.wrong { background: #ffebee; border-color: var(--wrong-color); color: var(--wrong-color); }
+
+        /* Inference Box (Case 1) */
+        .inference-box {
+            background: #f0f4c3;
+            border: 2px solid #c0ca33;
+            border-radius: 12px;
+            padding: 15px;
+            margin-top: 20px;
+        }
+        
+        .hypothesis-toggle {
+            display: flex; justify-content: center; gap: 0; margin-bottom: 15px;
+            background: #ddd; border-radius: 25px; padding: 5px; width: fit-content; margin: 0 auto 15px auto;
+        }
+        .hypo-option {
+            padding: 8px 20px; border-radius: 20px; cursor: pointer; font-weight: bold; color: #666; transition: all 0.3s;
+        }
+        .hypo-option.active { background: white; color: var(--earth-brown); box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        
+        .gene-select-row {
+            display: flex; justify-content: center; gap: 20px; align-items: center; margin-bottom: 15px;
+        }
+        select.gene-dropdown {
+            font-size: 1.1em; padding: 5px; border-radius: 5px; font-family: 'Comfortaa'; border: 2px solid var(--primary-green);
+        }
+
+        /* Q2 & Q3 Specific */
+        .gene-card {
+            width: 40px; height: 40px; background: #e0e0e0;
+            border: 2px solid #999; border-radius: 8px;
+            display: inline-flex; align-items: center; justify-content: center;
+            font-family: 'Comfortaa'; font-weight: bold; cursor: grab;
+        }
+        /* Q3 Specific draggable */
+        .q3-gene-card {
+            width: 35px; height: 35px; background: #81c784; color: white;
+            border: 2px solid #2e7d32; border-radius: 50%;
+            display: inline-flex; align-items: center; justify-content: center;
+            font-family: 'Comfortaa'; font-weight: bold; cursor: grab;
+            box-shadow: 0 3px 0 #1b5e20;
+            margin: 0 5px;
+            z-index: 100;
+        }
+        .q3-gene-card:active { transform: translateY(2px); box-shadow: none; cursor: grabbing; }
+
+        .drop-box {
+            width: 40px; height: 40px; border: 2px dashed #999;
+            border-radius: 8px; display: inline-flex; align-items: center; justify-content: center;
+            background: #f9f9f9;
+        }
+        .drop-box.filled { border-style: solid; border-color: var(--correct-color); background: #e8f5e9; }
+        
+        /* Multi-select */
+        .multi-option-container {
+            display: flex; flex-wrap: wrap; gap: 15px; justify-content: center; margin-top: 20px;
+        }
+        .multi-option {
+            font-size: 1.5em; /* Larger Font */
+            padding: 15px 25px;
+            border: 2px solid #aaa;
+            border-radius: 12px;
+            background: white;
+            cursor: pointer;
+            font-family: 'Comfortaa';
+            font-weight: bold;
+            transition: all 0.2s;
+            min-width: 150px;
+            text-align: center;
+        }
+        .multi-option:hover { background: #f0f0f0; border-color: #666; }
+        .multi-option.selected { background: #e3f2fd; border-color: #2196f3; color: #0d47a1; }
+        .multi-option.correct { background: #e8f5e9; border-color: #2e7d32; color: #2e7d32; }
+        .multi-option.missed { border-color: #e65100; color: #e65100; border-style: dashed; }
+
+        .geno-input {
+            width: 60px; padding: 5px; text-align: center;
+            font-family: 'Comfortaa'; font-size: 1.1em;
+            border: 2px solid #ccc; border-radius: 5px; background: #fff;
+        }
+        .geno-input:disabled { background: #eee; color: #333; border-color: transparent; }
+
+        .step-instruction {
+            background: #e1f5fe; color: #0277bd; padding: 10px; border-radius: 8px; margin-bottom: 10px; font-weight: bold; text-align: center;
+        }
+
+        /* Feedback Animation */
+        .feedback-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.7);
+            display: none; justify-content: center; align-items: center;
+            z-index: 1000;
+        }
+        .feedback-content {
+            background: white; padding: 40px; border-radius: 20px;
+            text-align: center; animation: popIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            border: 5px solid var(--primary-green);
+        }
+        .feedback-icon { font-size: 80px; color: var(--primary-green); margin-bottom: 20px; }
+        .confetti { position: absolute; width: 10px; height: 10px; background: #f00; animation: fall linear forwards; }
+
+        /* Footer */
+        .footer-nav { text-align: center; margin-top: 50px; border-top: 2px solid #eee; padding-top: 20px; }
+        .next-btn {
+            background-color: var(--primary-green); color: white; padding: 15px 40px; font-size: 1.5em;
+            border-radius: 50px; text-decoration: none; border: none; cursor: pointer; opacity: 0.5; pointer-events: none;
+        }
+        .next-btn.active { opacity: 1; pointer-events: auto; background-color: #556B2F; box-shadow: 0 5px 15px rgba(107, 142, 35, 0.4); }
+
+        @keyframes popIn { from { transform: scale(0); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+        @keyframes fall { to { transform: translateY(100vh) rotate(720deg); } }
+        @keyframes flashGreen { 0% { background: white; } 50% { background: #e8f5e9; } 100% { background: white; } }
+
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <header>
+        <h1><i class="fas fa-search"></i> 遺傳偵探：快速判斷法</h1>
+        <div class="subtitle">單元六：學會看圖說故事，破解基因密碼</div>
+    </header>
+
+    <!-- CASE 1 -->
+    <section id="case1" class="case-section">
+        <div class="case-header">
+            <span class="case-badge">案件一：消失的性狀</span>
+            <div style="font-weight:bold; color:var(--earth-brown);">若兩親代為同種性狀，子代卻出現新性狀...</div>
+        </div>
+
+        <div class="tip-box">
+            <i class="fas fa-lightbulb"></i> <b>解題訣竅：</b>兩親代為隱性性狀，子代必為隱性性狀。如果<b>親代子代不同性狀</b>，則親代性狀必是<b>顯性</b>。
+        </div>
+
+        <p><b>情境：</b>兩株<b>紫花</b>豌豆，生出了一株<b>白花</b>豌豆。請問哪種顏色是顯性？</p>
+
+        <div class="pedigree-tree">
+            <!-- Parents -->
+            <div class="generation">
+                <div class="marriage-line"></div>
+                <div class="individual">
+                    <i class="fas fa-spa flower-icon flower-purple"></i>
+                    <div class="genotype-label" id="q1-p1-label">?</div>
+                </div>
+                <div class="individual">
+                    <i class="fas fa-spa flower-icon flower-purple"></i>
+                    <div class="genotype-label" id="q1-p2-label">?</div>
+                </div>
+            </div>
+            <!-- Line down -->
+            <div class="descent-line"></div>
+            <!-- Child -->
+            <div class="generation">
+                <div class="individual">
+                    <i class="fas fa-spa flower-icon flower-white"></i>
+                    <div class="genotype-label" id="q1-c1-label">白花</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Inference Workstation -->
+        <div class="inference-box">
+            <p style="text-align:center; margin-top:0;"><b><i class="fas fa-microscope"></i> 推理工作台</b></p>
+            
+            <div class="hypothesis-toggle">
+                <div class="hypo-option active" id="hypo-rec" onclick="setHypothesis('rec')">假設：紫花是隱性 (p)</div>
+                <div class="hypo-option" id="hypo-dom" onclick="setHypothesis('dom')">假設：紫花是顯性 (P)</div>
+            </div>
+
+            <div class="gene-select-row">
+                <div>
+                    父方(紫)：
+                    <select class="gene-dropdown" id="sel-p1">
+                        <option value="">?</option>
+                        <option value="PP">PP</option>
+                        <option value="Pp">Pp</option>
+                        <option value="pp">pp</option>
+                    </select>
+                </div>
+                <div>×</div>
+                <div>
+                    母方(紫)：
+                    <select class="gene-dropdown" id="sel-p2">
+                        <option value="">?</option>
+                        <option value="PP">PP</option>
+                        <option value="Pp">Pp</option>
+                        <option value="pp">pp</option>
+                    </select>
+                </div>
+            </div>
+            
+            <div style="text-align:center;">
+                <button class="logic-btn" onclick="runSimulation()" style="background:var(--earth-brown); color:white; border:none;">進行交配測試</button>
+            </div>
+            
+            <div id="sim-feedback" style="text-align:center; margin-top:15px; font-weight:bold; min-height:30px;"></div>
+            
+            <!-- Conclusion -->
+            <div id="q1-conclusion" style="display:none; text-align:center; margin-top:15px; border-top:1px dashed #ccc; padding-top:10px;">
+                <p style="font-weight:bold; color:var(--primary-green);">驗證成功！紫花是顯性 (Pp)，白花是隱性 (pp)。</p>
+                <button class="logic-btn" style="background:var(--correct-color); color:white;" onclick="q1Solve()">我懂了！(解鎖下一題)</button>
+            </div>
+        </div>
+    </section>
+
+    <!-- CASE 2 -->
+    <section id="case2" class="case-section locked">
+        <div class="case-header">
+            <span class="case-badge">案件二：隱性的逆襲</span>
+            <div style="font-weight:bold; color:var(--earth-brown);">若子代全為隱性性狀...</div>
+        </div>
+
+        <div class="tip-box">
+            <i class="fas fa-lightbulb"></i> <b>解題訣竅：</b>子代是隱性 (tt)，代表兩個 t 分別來自父母。所以<b>父母雙方都至少帶有一個隱性基因</b>。
+        </div>
+
+        <p><b>情境：</b>若豌豆高莖為顯性，矮莖為隱性。子代全為<b>矮莖 (tt)</b>，親代的基因型可能是？（複選題）</p>
+
+        <div class="pedigree-tree">
+            <!-- Parents -->
+            <div class="generation">
+                <div class="marriage-line"></div>
+                <div class="individual">
+                    <div class="shape circle" style="border-style:dashed;">?</div>
+                    <div class="genotype-label">
+                        _ <div class="drop-box" id="q2-drop-1" data-target="p1"></div>
+                    </div>
+                </div>
+                <div class="individual">
+                    <div class="shape square" style="border-style:dashed;">?</div>
+                    <div class="genotype-label">
+                         _ <div class="drop-box" id="q2-drop-2" data-target="p2"></div>
+                    </div>
+                </div>
+            </div>
+            <div class="descent-line" style="height:60px;"></div>
+            <!-- Child -->
+            <div class="generation">
+                <div class="individual">
+                    <div class="shape short"><span style="font-size:0.6em;">矮</span></div>
+                    <div class="genotype-label" style="display:flex; gap:5px;">
+                        <div class="gene-card" draggable="true" id="gene-t1">t</div>
+                        <div class="gene-card" draggable="true" id="gene-t2">t</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <p style="text-align:center; color:#555;"><i class="fas fa-hand-pointer"></i> 請將子代的兩個 <b>t</b> 基因，分別拖曳歸還給父母！</p>
+
+        <div id="q2-options" style="display:none; text-align:center; margin-top:20px;">
+            <p><i class="fas fa-check-square"></i> 請選擇<b>所有</b>可能生出矮莖的親代組合：</p>
+            <div class="multi-option-container">
+                <div class="multi-option" onclick="toggleOption(this)" data-val="TTxtt">TT × tt</div>
+                <div class="multi-option" onclick="toggleOption(this)" data-val="TtxTt">Tt × Tt</div>
+                <div class="multi-option" onclick="toggleOption(this)" data-val="Ttxtt">Tt × tt</div>
+                <div class="multi-option" onclick="toggleOption(this)" data-val="ttxtt">tt × tt</div>
+                <div class="multi-option" onclick="toggleOption(this)" data-val="TTxTt">TT × Tt</div>
+                <div class="multi-option" onclick="toggleOption(this)" data-val="TTxTT">TT × TT</div>
+            </div>
+            <button class="action-btn" onclick="q2Check()">送出答案</button>
+            <div id="q2-msg" style="margin-top:10px; font-weight:bold;"></div>
+        </div>
+    </section>
+
+    <!-- CASE 3 -->
+    <section id="case3" class="case-section locked">
+        <div class="case-header">
+            <span class="case-badge">案件三：族譜大解密</span>
+            <div style="font-weight:bold; color:var(--earth-brown);">綜合應用題</div>
+        </div>
+
+        <div class="tip-box">
+            <i class="fas fa-lightbulb"></i> <b>解題訣竅：</b>
+            1. 先找隱性個體 (填入 aa)<br>
+            2. 將 a 分別還給親代<br>
+            3. 若親代是顯性表徵，則一定是 Aa
+        </div>
+
+        <p><b>情境：</b>人類的「耳垂分離」為顯性 (A)，「耳垂緊貼」為隱性 (a)。一對耳垂分離的夫婦，生下了一個耳垂緊貼的孩子。請填寫他們的基因型。</p>
+
+        <div class="pedigree-tree">
+            <!-- Parents -->
+            <div class="generation">
+                <div class="marriage-line"></div>
+                <div class="individual">
+                    <div class="shape square" style="background:#ddd;">父</div>
+                    <div>(耳垂分離)</div>
+                    <div class="genotype-label" id="box-p1">
+                        <input type="text" class="geno-input" id="q3-p1" maxlength="2" disabled>
+                    </div>
+                </div>
+                <div class="individual">
+                    <div class="shape circle" style="background:#ddd;">母</div>
+                    <div>(耳垂分離)</div>
+                    <div class="genotype-label" id="box-p2">
+                        <input type="text" class="geno-input" id="q3-p2" maxlength="2" disabled>
+                    </div>
+                </div>
+            </div>
+            <div class="descent-line" style="height:60px;"></div>
+            <!-- Child -->
+            <div class="generation">
+                <div class="individual">
+                    <div class="shape square white" style="border:3px solid #333;">子</div>
+                    <div>(耳垂緊貼)</div>
+                    <div class="genotype-label" id="box-c1">
+                        <input type="text" class="geno-input" id="q3-c1" maxlength="2" placeholder="?">
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div style="text-align:center; margin-top:20px;">
+            <div id="q3-step-instruction" class="step-instruction">步驟 1：請找出族譜中唯一的隱性個體，並填入基因型 (aa)。</div>
+            <button class="action-btn" id="q3-btn" onclick="q3NextStep()">確認步驟 1</button>
+            <div id="q3-msg" style="margin-top:10px; font-weight:bold; min-height: 24px;"></div>
+        </div>
+    </section>
+
+    <!-- Feedback Overlay -->
+    <div id="feedback-modal" class="feedback-overlay">
+        <div class="feedback-content">
+            <div class="feedback-icon"><i class="fas fa-check-circle"></i></div>
+            <h2 id="fb-title" style="color:var(--primary-green);">答對了！</h2>
+            <p id="fb-text">你的遺傳推理能力太強了！</p>
+            <button onclick="closeFeedback()" style="margin-top:20px; padding:10px 30px; background:var(--primary-green); color:white; border:none; border-radius:20px; cursor:pointer; font-size:1.2em;">繼續挑戰</button>
+        </div>
+    </div>
+
+    <!-- Nav -->
+    <div class="footer-nav">
+        <a href="mi07u.html" class="next-btn" id="next-btn">前往下一關：單元測驗 <i class="fas fa-arrow-right"></i></a>
+    </div>
+
+</div>
+
+<script>
+    // --- Global Helpers ---
+    function showFeedback(title, text, callback) {
+        document.getElementById('fb-title').innerText = title;
+        document.getElementById('fb-text').innerText = text;
+        const modal = document.getElementById('feedback-modal');
+        modal.style.display = 'flex';
+        for(let i=0; i<30; i++) createConfetti(modal);
+        window.currentCallback = callback;
+    }
+
+    function closeFeedback() {
+        document.getElementById('feedback-modal').style.display = 'none';
+        document.querySelectorAll('.confetti').forEach(c => c.remove());
+        if (window.currentCallback) window.currentCallback();
+    }
+
+    function createConfetti(container) {
+        const colors = ['#f44336', '#2196f3', '#ffeb3b', '#4caf50', '#9c27b0'];
+        const el = document.createElement('div');
+        el.className = 'confetti';
+        el.style.left = Math.random() * 100 + 'vw';
+        el.style.top = -10 + 'px';
+        el.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+        el.style.animationDuration = (Math.random() * 2 + 1) + 's';
+        container.appendChild(el);
+    }
+
+    function unlockSection(id) {
+        const el = document.getElementById(id);
+        el.classList.remove('locked');
+        el.scrollIntoView({behavior: "smooth", block: "center"});
+    }
+
+    // --- Q1 Logic: Hypothesis Testing ---
+    let currentHypo = 'rec'; 
+    let solvedRec = false;
+    let solvedDom = false;
+
+    function setHypothesis(type) {
+        currentHypo = type;
+        document.querySelectorAll('.hypo-option').forEach(el => el.classList.remove('active'));
+        document.getElementById('hypo-' + type).classList.add('active');
+        
+        // Reset Feedback
+        document.getElementById('sim-feedback').innerText = "";
+        
+        // Visual Guide for Tree
+        document.getElementById('q1-p1-label').innerText = "?";
+        document.getElementById('q1-p2-label').innerText = "?";
+        document.getElementById('q1-c1-label').innerHTML = "白花";
+    }
+
+    function runSimulation() {
+        const p1 = document.getElementById('sel-p1').value;
+        const p2 = document.getElementById('sel-p2').value;
+        const fb = document.getElementById('sim-feedback');
+
+        if (!p1 || !p2) {
+            fb.innerHTML = "<span style='color:#666;'>請先選擇兩位親代的基因型。</span>";
+            return;
+        }
+
+        // Logic Check
+        if (currentHypo === 'rec') {
+            // Hypothesis: Purple is Recessive (p) -> Parents must be pp
+            if (p1 !== 'pp' || p2 !== 'pp') {
+                fb.innerHTML = "<span style='color:var(--wrong-color)'><i class='fas fa-exclamation-triangle'></i> 矛盾！如果紫花是隱性(p)，親代基因型只能是 pp。</span>";
+                return;
+            }
+            
+            // Result
+            document.getElementById('q1-p1-label').innerText = "pp";
+            document.getElementById('q1-p2-label').innerText = "pp";
+            fb.innerHTML = "<span style='color:var(--wrong-color)'><i class='fas fa-times-circle'></i> 假設失敗！</span><br>pp × pp 的孩子一定是 pp (紫花)，但現實中生出了白花。<br>所以「紫花是隱性」假設<b>錯誤</b>。";
+            solvedRec = true;
+
+        } else {
+            // Hypothesis: Purple is Dominant (P) -> Parents can be PP or Pp
+            if (p1 === 'pp' || p2 === 'pp') {
+                 fb.innerHTML = "<span style='color:var(--wrong-color)'>矛盾！如果紫花是顯性，pp 應該是白花才對。</span>";
+                 return;
+            }
+            
+            document.getElementById('q1-p1-label').innerText = p1;
+            document.getElementById('q1-p2-label').innerText = p2;
+            
+            if (p1 === 'Pp' && p2 === 'Pp') {
+                fb.innerHTML = "<span style='color:var(--correct-color)'><i class='fas fa-check-circle'></i> 假設成立！</span><br>Pp × Pp 有機會生出 pp (白花)。<br>符合事實！";
+                solvedDom = true;
+            } else {
+                fb.innerHTML = "<span style='color:#f57c00'>沒生出白花...</span><br>這個組合生不出隱性小孩，請再試試其他基因組合。";
+            }
+        }
+
+        // Check completion
+        if (solvedRec && solvedDom) {
+            document.getElementById('q1-conclusion').style.display = 'block';
+        }
+    }
+
+    function q1Solve() {
+        showFeedback("太棒了！", "成功破解案件一！透過反證法，我們知道「無中生有」的性狀必為隱性。", () => {
+            document.getElementById('case1').classList.add('completed');
+            unlockSection('case2');
+        });
+    }
+
+    // --- Q2 Logic (Drag) ---
+    const genes = document.querySelectorAll('.gene-card');
+    const drops = document.querySelectorAll('.drop-box');
+    let q2Filled = 0;
+
+    genes.forEach(g => {
+        g.addEventListener('dragstart', e => { e.dataTransfer.setData('id', e.target.id); });
+        // Touch support simplified
+        g.addEventListener('touchstart', e => { 
+            e.preventDefault(); 
+            g.style.position = 'absolute'; 
+            g.style.zIndex = 1000; 
+            window.touchDrag = g;
+        });
+        g.addEventListener('touchmove', e => {
+            e.preventDefault();
+            if(!window.touchDrag) return;
+            const t = e.touches[0];
+            window.touchDrag.style.left = t.clientX - 20 + 'px';
+            window.touchDrag.style.top = t.clientY - 20 + 'px';
+        });
+        g.addEventListener('touchend', e => {
+            if(!window.touchDrag) return;
+            const t = e.changedTouches[0];
+            window.touchDrag.style.display = 'none';
+            const el = document.elementFromPoint(t.clientX, t.clientY);
+            window.touchDrag.style.display = 'flex';
+            
+            const drop = el ? el.closest('.drop-box') : null;
+            if(drop && !drop.classList.contains('filled')) {
+                drop.appendChild(window.touchDrag);
+                window.touchDrag.style.position = 'static';
+                drop.classList.add('filled');
+                checkQ2Drag();
+            } else {
+                window.touchDrag.style.position = 'static';
+            }
+            window.touchDrag = null;
+        });
+    });
+
+    drops.forEach(d => {
+        d.addEventListener('dragover', e => e.preventDefault());
+        d.addEventListener('drop', e => {
+            e.preventDefault();
+            if(d.classList.contains('filled')) return;
+            const id = e.dataTransfer.getData('id');
+            const el = document.getElementById(id);
+            d.appendChild(el);
+            d.classList.add('filled');
+            checkQ2Drag();
+        });
+    });
+
+    function checkQ2Drag() {
+        q2Filled++;
+        if(q2Filled === 2) {
+            document.getElementById('q2-options').style.display = 'block';
+        }
+    }
+
+    // Multi-select Check
+    function toggleOption(el) {
+        el.classList.toggle('selected');
+    }
+
+    function q2Check() {
+        const correctVals = ['TtxTt', 'Ttxtt', 'ttxtt'];
+        const options = document.querySelectorAll('.multi-option');
+        let allCorrect = true;
+        
+        options.forEach(opt => {
+            const val = opt.dataset.val;
+            const isSelected = opt.classList.contains('selected');
+            const isTarget = correctVals.includes(val);
+            
+            opt.classList.remove('correct', 'missed'); // Reset visual states
+            
+            if (isTarget) {
+                if (isSelected) {
+                    opt.classList.add('correct');
+                } else {
+                    opt.classList.add('missed');
+                    allCorrect = false;
+                }
+            } else {
+                if (isSelected) {
+                    opt.classList.add('wrong'); // Add red border if selected wrong
+                    allCorrect = false;
+                }
+            }
+        });
+
+        const msg = document.getElementById('q2-msg');
+        if (allCorrect) {
+            showFeedback("完全正確！", "這三種組合都帶有隱性基因 t，都有可能生出矮莖後代！", () => {
+                 unlockSection('case3');
+            });
+            msg.innerText = "";
+        } else {
+            msg.innerHTML = "<span style='color:red'>還有些可能沒選到，或是選了不可能的組合喔！(提示：父母必須都要有 t)</span>";
+        }
+    }
+
+    // --- Q3 Logic (Step-by-Step) ---
+    let q3Step = 1;
+    let q3DragFilled = 0; // Track drag progress in step 2
+
+    function initQ3DragStage() {
+        // UI Updates
+        document.getElementById('q3-step-instruction').innerText = "步驟 2：請將子代的隱性基因 (a) 拖曳歸還給父母！";
+        document.getElementById('q3-btn').style.display = 'none'; // Hide button, action is drag
+        
+        // Visual setup for drag
+        const cBox = document.getElementById('box-c1');
+        cBox.innerHTML = ''; // Clear input
+        
+        // Create draggable genes
+        const a1 = createDraggableGene('a', 'q3-gene-a1');
+        const a2 = createDraggableGene('a', 'q3-gene-a2');
+        cBox.appendChild(a1);
+        cBox.appendChild(a2);
+        
+        // Setup drop zones visual
+        document.getElementById('box-p1').classList.add('active-drop');
+        document.getElementById('box-p2').classList.add('active-drop');
+        
+        q3Step = 2;
+    }
+
+    function createDraggableGene(text, id) {
+        const el = document.createElement('div');
+        el.className = 'q3-gene-card';
+        el.id = id;
+        el.draggable = true;
+        el.innerText = text;
+        
+        // Add listeners
+        el.addEventListener('dragstart', e => { e.dataTransfer.setData('id', e.target.id); });
+        
+        // Simple Touch Logic for these specific elements
+        el.addEventListener('touchstart', e => {
+            e.preventDefault(); e.target.style.position='absolute'; e.target.style.zIndex=1000; window.q3Touch = e.target;
+        });
+        el.addEventListener('touchmove', e => {
+            e.preventDefault(); if(!window.q3Touch) return;
+            const t = e.touches[0];
+            window.q3Touch.style.left = t.clientX - 15 + 'px';
+            window.q3Touch.style.top = t.clientY - 15 + 'px';
+        });
+        el.addEventListener('touchend', e => {
+            if(!window.q3Touch) return;
+            const t = e.changedTouches[0];
+            window.q3Touch.style.display = 'none';
+            const elBelow = document.elementFromPoint(t.clientX, t.clientY);
+            window.q3Touch.style.display = 'flex';
+            
+            // Identify parent box
+            const p1 = document.getElementById('box-p1');
+            const p2 = document.getElementById('box-p2');
+            
+            // Simple hit test wrapper
+            if (p1.contains(elBelow)) handleQ3Drop(p1, window.q3Touch);
+            else if (p2.contains(elBelow)) handleQ3Drop(p2, window.q3Touch);
+            else window.q3Touch.style.position = 'static';
+            
+            window.q3Touch = null;
+        });
+
+        return el;
+    }
+    
+    // Drop logic for Q3
+    const pBoxes = ['box-p1', 'box-p2'];
+    pBoxes.forEach(id => {
+        const box = document.getElementById(id);
+        box.addEventListener('dragover', e => e.preventDefault());
+        box.addEventListener('drop', e => {
+            e.preventDefault();
+            const geneId = e.dataTransfer.getData('id');
+            const geneEl = document.getElementById(geneId);
+            handleQ3Drop(box, geneEl);
+        });
+    });
+
+    function handleQ3Drop(targetBox, geneEl) {
+        if (targetBox.classList.contains('filled')) return; // Already has gene
+        
+        // Remove gene element
+        geneEl.remove();
+        
+        // Update Target Visual
+        targetBox.classList.remove('active-drop');
+        targetBox.classList.add('filled');
+        targetBox.innerHTML = '<span style="font-weight:bold; color:var(--earth-brown);">_a</span>'; // Visual feedback
+        
+        q3DragFilled++;
+        
+        if (q3DragFilled === 2) {
+            setTimeout(setupQ3FinalStep, 500);
+        }
+    }
+
+    function setupQ3FinalStep() {
+        q3Step = 3;
+        document.getElementById('q3-step-instruction').innerText = "步驟 3：親代為顯性表徵，請補上顯性基因 (A)，完成基因型。";
+        
+        // Restore Inputs
+        const p1Box = document.getElementById('box-p1');
+        const p2Box = document.getElementById('box-p2');
+        
+        p1Box.innerHTML = '<input type="text" class="geno-input" id="q3-p1" maxlength="2" placeholder="?a">';
+        p2Box.innerHTML = '<input type="text" class="geno-input" id="q3-p2" maxlength="2" placeholder="?a">';
+        p1Box.classList.remove('filled'); p2Box.classList.remove('filled');
+        
+        document.getElementById('q3-btn').innerText = "送出最終答案";
+        document.getElementById('q3-btn').style.display = 'inline-block';
+    }
+
+    function q3NextStep() {
+        const msg = document.getElementById('q3-msg');
+        
+        if (q3Step === 1) {
+            const c1Input = document.getElementById('q3-c1');
+            if (c1Input.value.trim().toLowerCase() === 'aa') {
+                c1Input.disabled = true;
+                c1Input.style.borderColor = 'green';
+                msg.innerText = "";
+                initQ3DragStage();
+            } else {
+                msg.innerHTML = "<span style='color:red'>小孩是隱性表徵，基因型應該是？(兩個小寫)</span>";
+            }
+        } else if (q3Step === 3) {
+            const p1Val = document.getElementById('q3-p1').value.trim();
+            const p2Val = document.getElementById('q3-p2').value.trim();
+            const isAa = (v) => v === 'Aa' || v === 'aA';
+            
+            if (isAa(p1Val) && isAa(p2Val)) {
+                showFeedback("全數通關！", "太厲害了！你已經完全掌握了遺傳法則的推論邏輯。", () => {
+                    document.getElementById('next-btn').classList.add('active');
+                    window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+                });
+                msg.innerText = "";
+            } else {
+                msg.innerHTML = "<span style='color:red'>父母是顯性表徵，所以另一個基因應該是？</span>";
+            }
+        }
+    }
+
+</script>
+</body>
+</html>

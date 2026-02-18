@@ -1,0 +1,600 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>孟德爾的遺傳法則：性狀與表徵</title>
+    
+    <!-- 引入 Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- 引入 Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;700&display=swap" rel="stylesheet">
+
+    <style>
+        :root {
+            --primary-green: #6B8E23; /* 橄欖綠 */
+            --light-green: #F0FFF0;   /* 蜜瓜綠 */
+            --earth-brown: #8B4513;   /* 土壤色 */
+            --ocean-blue: #4682B4;    /* 用於血型 */
+            --text-color: #333333;
+            --correct-color: #4CAF50;
+            --wrong-color: #e74c3c;
+            --disabled-gray: #ccc;
+        }
+
+        body {
+            font-family: 'Noto Sans TC', sans-serif;
+            background-color: #fcfbf4;
+            color: var(--text-color);
+            margin: 0;
+            padding: 20px;
+            line-height: 1.8;
+            font-size: 18px;
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            background-color: white;
+            padding: 30px;
+            border-radius: 20px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+            border: 2px solid #e0e0e0;
+        }
+
+        /* Header */
+        header {
+            text-align: center;
+            border-bottom: 3px solid var(--primary-green);
+            padding-bottom: 20px;
+            margin-bottom: 30px;
+        }
+
+        h1 {
+            color: var(--primary-green);
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+
+        .subtitle {
+            font-size: 1.2em;
+            color: #666;
+        }
+
+        /* Section Styling */
+        section {
+            margin-bottom: 40px;
+            padding: 25px;
+            background-color: var(--light-green);
+            border-radius: 15px;
+            border-left: 8px solid var(--primary-green);
+        }
+
+        h2 {
+            color: var(--earth-brown);
+            display: flex;
+            align-items: center;
+            font-size: 1.8em;
+            margin-top: 0;
+        }
+
+        h2 i {
+            margin-right: 15px;
+            color: var(--primary-green);
+        }
+
+        /* Fill Blank Area */
+        .fill-blank-container {
+            font-size: 1.2em;
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+        }
+
+        input[type="text"] {
+            border: 2px solid #bbb;
+            border-radius: 5px;
+            padding: 5px 10px;
+            font-size: 1em;
+            width: 120px;
+            color: var(--earth-brown);
+            text-align: center;
+            font-family: 'Noto Sans TC', sans-serif;
+            transition: all 0.3s;
+        }
+
+        input[type="text"]:focus {
+            border-color: var(--primary-green);
+            outline: none;
+            background-color: #f9fff9;
+        }
+
+        input.correct {
+            border-color: var(--correct-color);
+            background-color: #e8f5e9;
+            color: var(--correct-color);
+            font-weight: bold;
+        }
+
+        /* Game Area */
+        .game-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .progress-container {
+            flex-grow: 1;
+            margin-left: 20px;
+            background-color: #ddd;
+            border-radius: 10px;
+            height: 20px;
+            overflow: hidden;
+        }
+
+        .progress-bar {
+            height: 100%;
+            width: 0%;
+            background-color: var(--correct-color);
+            transition: width 0.5s ease;
+        }
+
+        /* Targets (Baskets/Buckets) */
+        .traits-container {
+            display: flex;
+            justify-content: space-around;
+            flex-wrap: wrap;
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+
+        .trait-box {
+            background-color: white;
+            border: 3px solid #8B4513;
+            border-radius: 0 0 15px 15px; /* 看起來像個桶子 */
+            border-top: none;
+            position: relative;
+            width: 18%;
+            min-width: 150px;
+            height: 140px; /* 固定高度，不需要裝卡片了 */
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 10px;
+            transition: all 0.3s;
+            cursor: pointer;
+            box-shadow: 0 5px 5px rgba(0,0,0,0.1);
+        }
+
+        /* 桶子的蓋子/標籤 */
+        .trait-box::before {
+            content: '';
+            position: absolute;
+            top: -15px;
+            left: -3px;
+            right: -3px;
+            height: 15px;
+            background-color: #A0522D;
+            border-radius: 5px 5px 0 0;
+        }
+
+        .trait-box:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 15px rgba(0,0,0,0.2);
+            background-color: #fff8e1;
+        }
+
+        .trait-title {
+            font-weight: bold;
+            color: var(--earth-brown);
+            text-align: center;
+            font-size: 1.1em;
+            z-index: 1;
+        }
+        
+        .trait-icon {
+            font-size: 2em;
+            color: var(--primary-green);
+            margin-bottom: 5px;
+        }
+
+        /* Card Repository (Pond) */
+        .card-repository {
+            background-color: #e3f2fd; /* 淡藍色像池塘/桌面 */
+            padding: 30px;
+            border-radius: 20px;
+            min-height: 250px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 15px;
+            border: 4px solid #90caf9;
+            position: relative;
+        }
+
+        .phenotype-card {
+            background: linear-gradient(145deg, #ffffff, #f0f0f0);
+            padding: 15px 25px;
+            border-radius: 12px;
+            cursor: pointer;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+            font-weight: bold;
+            color: #333;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            transition: all 0.2s;
+            border: 2px solid #fff;
+            user-select: none;
+            font-size: 1.1em;
+        }
+
+        .phenotype-card:hover {
+            transform: translateY(-5px) scale(1.05);
+            box-shadow: 0 8px 16px rgba(0,0,0,0.2);
+            border-color: var(--primary-green);
+        }
+
+        .phenotype-card.selected {
+             border: 3px solid var(--primary-green);
+             background-color: #dcedc8;
+             transform: scale(1.1);
+             box-shadow: 0 0 15px var(--primary-green);
+             z-index: 10;
+        }
+
+        /* Animations */
+        @keyframes vanish {
+            0% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.5); opacity: 0.5; }
+            100% { transform: scale(0); opacity: 0; }
+        }
+
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-10px); }
+            75% { transform: translateX(10px); }
+        }
+        
+        @keyframes pop {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.2); }
+            100% { transform: scale(1); }
+        }
+
+        .vanish-anim {
+            animation: vanish 0.5s forwards;
+        }
+
+        .shake-anim {
+            animation: shake 0.4s;
+        }
+        
+        .pop-anim {
+            animation: pop 0.3s;
+        }
+
+        /* Next Page Button */
+        .footer-nav {
+            text-align: center;
+            margin-top: 50px;
+            padding-top: 20px;
+            border-top: 2px solid #eee;
+        }
+
+        .next-btn {
+            display: inline-block;
+            background-color: var(--primary-green);
+            color: white;
+            padding: 15px 40px;
+            font-size: 1.5em;
+            border-radius: 50px;
+            text-decoration: none;
+            box-shadow: 0 5px 15px rgba(107, 142, 35, 0.4);
+            transition: all 0.3s;
+            border: none;
+            cursor: pointer;
+            opacity: 0.5;
+            pointer-events: none;
+        }
+
+        .next-btn.active {
+            opacity: 1;
+            pointer-events: auto;
+            background-color: #556B2F;
+        }
+
+        .next-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 20px rgba(107, 142, 35, 0.6);
+        }
+
+        /* Feedback Text */
+        #game-feedback {
+            text-align: center; 
+            margin-top: 15px; 
+            font-weight: bold; 
+            min-height: 30px; 
+            font-size: 1.2em;
+        }
+
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <header>
+        <h1><i class="fas fa-leaf"></i> 孟德爾的遺傳實驗室</h1>
+        <div class="subtitle">單元一：性狀與表徵配對大挑戰</div>
+    </header>
+
+    <!-- 第一部分：理解與填空 -->
+    <section id="section-concept">
+        <h2><i class="fas fa-book-open"></i> 1. 觀念熱身</h2>
+        <div class="fill-blank-container">
+            <p>
+                在遺傳學中，我們需要區分兩個重要名詞：<br><br>
+                (1) 生物體可遺傳的特徵（例如：人類的血型、豌豆的莖高），稱為
+                <input type="text" id="input-trait" placeholder="輸入名詞" autocomplete="off"> 
+                <i class="fas fa-check-circle check-icon" id="check-trait" style="display:none; color:var(--correct-color);"></i>。
+            </p>
+            <p>
+                (2) 該特徵表現出來的形式（例如：A型血、高莖），則稱為
+                <input type="text" id="input-phenotype" placeholder="輸入名詞" autocomplete="off">
+                <i class="fas fa-check-circle check-icon" id="check-phenotype" style="display:none; color:var(--correct-color);"></i>。
+            </p>
+        </div>
+    </section>
+
+    <!-- 第二部分：配對遊戲 -->
+    <section id="section-game">
+        <div class="game-header">
+            <h2><i class="fas fa-gamepad"></i> 2. 配對大挑戰</h2>
+            <div style="display: flex; align-items: center; width: 50%;">
+                <span>進度：</span>
+                <div class="progress-container">
+                    <div class="progress-bar" id="progress-bar"></div>
+                </div>
+                <span id="score-text" style="margin-left: 10px; font-weight: bold;">0/12</span>
+            </div>
+        </div>
+        
+        <p style="text-align: center; color: #555; margin-bottom: 20px;">
+            <i class="fas fa-info-circle"></i> 遊戲說明：點選下方的<b>白色卡牌</b>，再點選上方對應的<b>分類桶</b>。配對正確卡牌會消失喔！
+        </p>
+        
+        <!-- 目標區域 (籃子) -->
+        <div class="traits-container">
+            <!-- 1. 莖的高度 -->
+            <div class="trait-box" data-trait="height" onclick="handleContainerClick('height')">
+                <div class="trait-icon"><i class="fas fa-ruler-vertical"></i></div>
+                <div class="trait-title">豌豆<br>莖的高度</div>
+            </div>
+            
+            <!-- 2. 豆莢形狀 -->
+            <div class="trait-box" data-trait="pod-shape" onclick="handleContainerClick('pod-shape')">
+                <div class="trait-icon"><i class="fas fa-vector-square"></i></div>
+                <div class="trait-title">豌豆<br>豆莢形狀</div>
+            </div>
+
+            <!-- 3. ABO血型 -->
+            <div class="trait-box" data-trait="blood-type" onclick="handleContainerClick('blood-type')" style="border-color: var(--ocean-blue);">
+                <div class="trait-icon" style="color: var(--ocean-blue);"><i class="fas fa-heartbeat"></i></div>
+                <div class="trait-title" style="color: var(--ocean-blue);">人類<br>ABO血型</div>
+            </div>
+
+            <!-- 4. 花的顏色 -->
+            <div class="trait-box" data-trait="flower-color" onclick="handleContainerClick('flower-color')">
+                <div class="trait-icon"><i class="fas fa-palette"></i></div>
+                <div class="trait-title">豌豆<br>花的顏色</div>
+            </div>
+
+            <!-- 5. 種子顏色 -->
+            <div class="trait-box" data-trait="seed-color" onclick="handleContainerClick('seed-color')">
+                <div class="trait-icon"><i class="fas fa-circle"></i></div>
+                <div class="trait-title">豌豆<br>種子顏色</div>
+            </div>
+        </div>
+
+        <!-- 來源區域 (卡牌池) -->
+        <div class="card-repository" id="card-repo">
+            <!-- 卡片將由 JS 生成 -->
+            <div style="position: absolute; opacity: 0.1; font-size: 5em; pointer-events: none;">
+                <i class="fas fa-layer-group"></i>
+            </div>
+        </div>
+
+        <div id="game-feedback" style="color: var(--primary-green);"></div>
+    </section>
+
+    <!-- 導航區域 -->
+    <div class="footer-nav">
+        <a href="mi021.html" class="next-btn" id="next-btn">
+            前往下一關：消失的矮莖 <i class="fas fa-arrow-right"></i>
+        </a>
+    </div>
+
+</div>
+
+<script>
+    // --- 資料設定 (更新為 5 種性狀) ---
+    const traitsData = {
+        'height': ['高莖', '矮莖'],
+        'pod-shape': ['飽滿', '皺縮'],
+        'blood-type': ['A型', 'B型', 'AB型', 'O型'],
+        'flower-color': ['紫花', '白花'],
+        'seed-color': ['黃色種子', '綠色種子']
+    };
+
+    // 扁平化所有卡片資料
+    let allCards = [];
+    Object.keys(traitsData).forEach(trait => {
+        traitsData[trait].forEach(phenotype => {
+            allCards.push({ trait: trait, text: phenotype });
+        });
+    });
+
+    // 遊戲狀態變數
+    let totalCards = allCards.length; // 2+2+4+2+2 = 12 張
+    let matchedCards = 0;
+    let selectedCard = null;
+    let definitionsCorrect = false;
+
+    // --- 初始化 ---
+    const repo = document.getElementById('card-repo');
+    const scoreText = document.getElementById('score-text');
+    const progressBar = document.getElementById('progress-bar');
+    const feedback = document.getElementById('game-feedback');
+
+    // 隨機打亂並生成卡片
+    function initGame() {
+        allCards.sort(() => Math.random() - 0.5);
+        
+        allCards.forEach((cardData, index) => {
+            const card = document.createElement('div');
+            card.classList.add('phenotype-card');
+            card.setAttribute('data-target', cardData.trait);
+            card.setAttribute('id', 'card-' + index);
+            card.innerHTML = `${cardData.text}`;
+            
+            // 點擊事件 (選取)
+            card.addEventListener('click', function(e) {
+                e.stopPropagation();
+                
+                // 播放選取音效概念 (這裡僅用視覺)
+                
+                // 清除其他選取
+                document.querySelectorAll('.phenotype-card').forEach(c => c.classList.remove('selected'));
+                
+                // 選取當前
+                card.classList.add('selected');
+                selectedCard = card;
+                
+                // 提示文字
+                feedback.innerText = `已選擇「${cardData.text}」，請問這屬於哪一種性狀？`;
+                feedback.style.color = '#333';
+            });
+
+            repo.appendChild(card);
+        });
+        
+        updateScore();
+    }
+
+    // --- 容器點擊邏輯 (配對) ---
+    function handleContainerClick(targetTrait) {
+        if (!selectedCard) {
+            feedback.innerText = "請先點選下方的一張卡牌！";
+            feedback.style.color = "var(--wrong-color)";
+            // 讓整個卡牌區閃一下提醒
+            repo.style.boxShadow = "0 0 10px #e74c3c";
+            setTimeout(() => repo.style.boxShadow = "none", 300);
+            return;
+        }
+
+        const cardTrait = selectedCard.getAttribute('data-target');
+        const container = document.querySelector(`.trait-box[data-trait="${targetTrait}"]`);
+
+        if (cardTrait === targetTrait) {
+            // --- 配對成功 ---
+            
+            // 1. 播放容器動畫
+            container.classList.add('pop-anim');
+            setTimeout(() => container.classList.remove('pop-anim'), 300);
+
+            // 2. 卡片消失動畫
+            const cardRef = selectedCard; // 保存引用
+            cardRef.classList.remove('selected');
+            cardRef.classList.add('vanish-anim'); // 執行消失動畫
+            
+            // 動畫結束後從 DOM 移除
+            setTimeout(() => {
+                if(cardRef.parentNode) cardRef.parentNode.removeChild(cardRef);
+            }, 500);
+
+            // 3. 更新狀態
+            matchedCards++;
+            updateScore();
+            
+            feedback.innerHTML = `<i class="fas fa-check"></i> 答對了！消除成功！`;
+            feedback.style.color = "var(--correct-color)";
+            
+            selectedCard = null;
+            checkCompletion();
+
+        } else {
+            // --- 配對失敗 ---
+            feedback.innerHTML = `<i class="fas fa-times"></i> 配對錯誤，再試試看！`;
+            feedback.style.color = "var(--wrong-color)";
+            
+            // 卡片搖晃
+            selectedCard.classList.add('shake-anim');
+            setTimeout(() => selectedCard.classList.remove('shake-anim'), 400);
+        }
+    }
+
+    function updateScore() {
+        scoreText.innerText = `${matchedCards} / ${totalCards}`;
+        const percentage = (matchedCards / totalCards) * 100;
+        progressBar.style.width = `${percentage}%`;
+    }
+
+    // --- 填空題邏輯 ---
+    const inputTrait = document.getElementById('input-trait');
+    const inputPhenotype = document.getElementById('input-phenotype');
+
+    function checkDefinitions() {
+        const ans1 = inputTrait.value.trim();
+        const ans2 = inputPhenotype.value.trim();
+        let q1Correct = false;
+        let q2Correct = false;
+
+        if (ans1.includes('性狀')) {
+            inputTrait.classList.add('correct');
+            document.getElementById('check-trait').style.display = 'inline-block';
+            inputTrait.disabled = true;
+            q1Correct = true;
+        } 
+
+        if (ans2.includes('表徵')) {
+            inputPhenotype.classList.add('correct');
+            document.getElementById('check-phenotype').style.display = 'inline-block';
+            inputPhenotype.disabled = true;
+            q2Correct = true;
+        }
+
+        if (q1Correct && q2Correct) {
+            definitionsCorrect = true;
+            checkCompletion();
+        }
+    }
+
+    inputTrait.addEventListener('blur', checkDefinitions);
+    inputPhenotype.addEventListener('blur', checkDefinitions);
+    inputTrait.addEventListener('keyup', (e) => { if(e.key === 'Enter') checkDefinitions(); });
+    inputPhenotype.addEventListener('keyup', (e) => { if(e.key === 'Enter') checkDefinitions(); });
+
+    // --- 檢查通關 ---
+    function checkCompletion() {
+        if (definitionsCorrect && matchedCards === totalCards) {
+            const btn = document.getElementById('next-btn');
+            btn.classList.add('active');
+            
+            feedback.innerHTML = `<i class="fas fa-crown"></i> 太厲害了！所有卡牌已清除，請點擊下方按鈕進入下一關！`;
+            repo.innerHTML = `<div style="text-align:center; color:var(--primary-green); font-size:1.5em; animation: pop 0.5s;"><i class="fas fa-check-circle"></i> 全部完成！</div>`;
+        }
+    }
+
+    // 啟動遊戲
+    initGame();
+
+</script>
+</body>
+</html>
