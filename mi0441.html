@@ -391,12 +391,12 @@
         /* IMPORTANT: Hidden class MUST be last to override flex */
         .hidden { display: none !important; }
 
-        /* === iPad/手機 通用修正 (加在 style 最後面即可) === */
-        [draggable="true"] {
-            touch-action: none;       /* 防止畫面跟著手指捲動 */
-            user-select: none;        /* 防止選取文字 */
-            -webkit-user-select: none;
-        }
+     .header-cell.filled {
+    border: 2px solid var(--earth-brown) !important; /* 實線邊框 */
+    background-color: #fff3e0; /* 變成淺橘色底 */
+    color: black;
+    cursor: default;
+}
       
     </style>
 </head>
@@ -812,6 +812,65 @@
         }
         
         resetChallengeGrid();
+        
+        // ==========================================
+    // ★ 自動填寫親代基因 (跳過拖曳標題步驟)
+    // ==========================================
+    
+    // 1. 從畫面上抓取目前的題目 (例如 "T, T x t, t")
+    let pTextObj = document.getElementById('parents-text');
+    if (pTextObj) {
+        let pText = pTextObj.innerText; 
+        
+        // 分割出上方和左方的基因
+        // 假設格式是 "T, T x t, t"
+        let parts = pText.split(' x '); 
+        if (parts.length === 2) {
+            let topGenes = parts[0].split(', '); // 取得上方的兩個字母
+            let leftGenes = parts[1].split(', '); // 取得左方的兩個字母
+
+            // 2. 填寫上方標題 (Top)
+            let t1 = document.getElementById('ch-top-1');
+            let t2 = document.getElementById('ch-top-2');
+            if(t1 && t2) {
+                t1.innerText = topGenes[0];
+                t2.innerText = topGenes[1];
+                // 移除虛線框與目標樣式，讓它看起來已經固定了
+                t1.classList.remove('target-zone');
+                t2.classList.remove('target-zone');
+                t1.classList.add('filled');
+                t2.classList.add('filled');
+                // 禁止對它進行操作
+                t1.style.pointerEvents = 'none';
+                t2.style.pointerEvents = 'none';
+            }
+
+            // 3. 填寫左方標題 (Left)
+            let l1 = document.getElementById('ch-left-1');
+            let l2 = document.getElementById('ch-left-2');
+            if(l1 && l2) {
+                l1.innerText = leftGenes[0];
+                l2.innerText = leftGenes[1];
+                l1.classList.remove('target-zone');
+                l2.classList.remove('target-zone');
+                l1.classList.add('filled');
+                l2.classList.add('filled');
+                l1.style.pointerEvents = 'none';
+                l2.style.pointerEvents = 'none';
+            }
+            
+            // 4. ★ 重要：強制解鎖中間的格子
+            // 原本的程式可能要等標題填滿才會解鎖中間，我們這裡手動解鎖
+            let centerCells = document.querySelectorAll('.c-cell');
+            centerCells.forEach(cell => {
+                cell.classList.remove('locked'); // 移除鎖定樣式
+                cell.style.pointerEvents = 'auto'; // 允許滑鼠/手指點擊拖曳
+                
+                // 為了視覺提示，可以把它們變成可放置的樣子
+                cell.classList.add('target-zone'); 
+            });
+        }
+    }
     }
 
     function resetChallengeGrid() {
@@ -899,122 +958,7 @@
     const styleSheet = document.createElement("style");
     styleSheet.innerText = `@keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(107, 142, 35, 0.4); } 70% { box-shadow: 0 0 0 10px rgba(107, 142, 35, 0); } 100% { box-shadow: 0 0 0 0 rgba(107, 142, 35, 0); } }`;
     document.head.appendChild(styleSheet);
-
-<script>
-// ==========================================
-// ★ iPad/平板 觸控拖曳終極修復程式 (v3.0)
-// ==========================================
-(function() {
-    // 變數準備
-    let dragGhost = null;       // 跟隨手指的分身
-    let dragSource = null;      // 被拖曳的原始物件
-    let dragOffsetX = 0;
-    let dragOffsetY = 0;
-
-    // 頁面載入後啟動監聽
-    setTimeout(() => {
-        const draggables = document.querySelectorAll('[draggable="true"]');
-        draggables.forEach(el => {
-            el.addEventListener('touchstart', handleTouchStart, {passive: false});
-            el.addEventListener('touchmove', handleTouchMove, {passive: false});
-            el.addEventListener('touchend', handleTouchEnd, {passive: false});
-        });
-    }, 500);
-
-    function handleTouchStart(e) {
-        // 1. 禁止畫面捲動
-        if (e.cancelable) e.preventDefault();
-        
-        const touch = e.touches[0];
-        dragSource = e.currentTarget;
-
-        // 2. 製作分身 (Ghost)
-        dragGhost = dragSource.cloneNode(true);
-        dragGhost.style.position = 'fixed';
-        dragGhost.style.zIndex = '99999';
-        dragGhost.style.opacity = '0.8';
-        dragGhost.style.pointerEvents = 'none'; // ★關鍵：讓分身完全透明，不阻擋偵測
-        dragGhost.style.transform = 'scale(1.1)'; // 放大一點讓手指看得清楚
-        
-        // 設定分身初始位置
-        const rect = dragSource.getBoundingClientRect();
-        dragOffsetX = touch.clientX - rect.left;
-        dragOffsetY = touch.clientY - rect.top;
-        
-        dragGhost.style.left = (touch.clientX - dragOffsetX) + 'px';
-        dragGhost.style.top = (touch.clientY - dragOffsetY) + 'px';
-        dragGhost.style.width = rect.width + 'px';
-        dragGhost.style.height = rect.height + 'px'; // 鎖定高度以免跑版
-
-        document.body.appendChild(dragGhost);
-    }
-
-    function handleTouchMove(e) {
-        if (!dragGhost) return;
-        if (e.cancelable) e.preventDefault();
-        
-        const touch = e.touches[0];
-        // 更新分身位置
-        dragGhost.style.left = (touch.clientX - dragOffsetX) + 'px';
-        dragGhost.style.top = (touch.clientY - dragOffsetY) + 'px';
-    }
-
-    function handleTouchEnd(e) {
-        if (!dragGhost) return;
-
-        // 1. 立刻移除分身，確保不擋路
-        dragGhost.remove();
-        dragGhost = null;
-
-        // 2. 偵測手指放開點底下的元素
-        const touch = e.changedTouches[0];
-        
-        // 先暫時隱藏分身(雖已remove但保險起見)，取得座標點下的元素
-        let targetElem = document.elementFromPoint(touch.clientX, touch.clientY);
-        
-        if (!targetElem) return;
-
-        // 3. 往上找，看是不是合法的放置區 (有 ondrop 屬性或是 .drop-zone)
-        let dropZone = targetElem.closest('[ondrop]') || targetElem.closest('.drop-zone');
-
-        if (dropZone && dragSource) {
-            // 4. 準備資料：模擬原本 dragstart 會帶的資料
-            // 您的程式碼主要依賴 innerText (文字) 和 id (來源ID)
-            const dataText = dragSource.innerText;
-            const dataId = dragSource.id;
-
-            // 5. 偽造 Event 物件
-            const mockEvent = {
-                preventDefault: () => {},
-                stopPropagation: () => {},
-                target: dropZone, // 告訴程式這是目標
-                dataTransfer: {
-                    getData: (type) => {
-                        if (type === 'text') return dataText;
-                        if (type === 'sourceId') return dataId;
-                        return '';
-                    }
-                }
-            };
-
-            // 6. 執行對應的函式
-            // 讀取 HTML 屬性看它原本要呼叫誰 (drop(event) 還是 dropGenotype(event))
-            const onDropAttr = dropZone.getAttribute('ondrop');
-            
-            if (onDropAttr) {
-                if (onDropAttr.includes('dropGenotype') && typeof window.dropGenotype === 'function') {
-                    window.dropGenotype(mockEvent);
-                } else if (onDropAttr.includes('drop') && typeof window.drop === 'function') {
-                    window.drop(mockEvent);
-                }
-            }
-        }
-        
-        // 重置
-        dragSource = null;
-    }
-})();
-</script>
+    
 </script>
 </body>
 </html>
