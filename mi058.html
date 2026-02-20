@@ -458,68 +458,50 @@
 </head>
 <body>
     
-<!-- ＝＝＝＝ 請複製以下整個區塊到你的 HTML 中 ＝＝＝＝ -->
-    <section class="concept-panel">
-        <div class="concept-header">
-            <i class="fas fa-book-reader"></i> 概念補給站（課本 p.43 核心概念）
-        </div>
-        
-        <div class="concept-grid">
-            
-            <!-- 名詞 1：染色體 -->
-            <div class="term-card">
-                <div class="term-icon"><i class="fas fa-xmark"></i></div>
-                <div class="term-content">
-                    <h4>染色體 (Chromosome)</h4>
-                    <p>位於細胞核內，由 <b>DNA</b> 和 <b>蛋白質</b> 纏繞濃縮而成的構造，平時呈細絲狀，細胞分裂時會濃縮成粗短狀。</p>
-                </div>
-            </div>
-
-            <!-- 名詞 2：DNA -->
-            <div class="term-card">
-                <div class="term-icon"><i class="fas fa-dna"></i></div>
-                <div class="term-content">
-                    <h4>DNA (去氧核糖核酸)</h4>
-                    <p>構成染色體的主要成分，呈雙股螺旋結構，負責攜帶生物體的遺傳密碼。</p>
-                </div>
-            </div>
-
-            <!-- 名詞 3：基因 -->
-            <div class="term-card">
-                <div class="term-icon"><i class="fas fa-puzzle-piece"></i></div>
-                <div class="term-content">
-                    <h4>基因 (Gene)</h4>
-                    <p>位於 DNA 上具有特定功能的片段，是控制生物性狀（如單雙眼皮、血型）的基本遺傳單位。</p>
-                </div>
-            </div>
-
-            <!-- 名詞 4：同源染色體 -->
-            <div class="term-card">
-                <div class="term-icon"><i class="fas fa-clone"></i></div>
-                <div class="term-content">
-                    <h4>同源染色體</h4>
-                    <p>體細胞中形狀、大小相似的成對染色體。其中一條來自父方（精子），另一條來自母方（卵子）。</p>
-                </div>
-            </div>
-
-            <!-- 名詞 5：等位基因 -->
-            <div class="term-card">
-                <div class="term-icon"><i class="fas fa-font"></i></div>
-                <div class="term-content">
-                    <h4>等位基因 (Allele)</h4>
-                    <p>位於同源染色體相對應的位置上，控制同一種性狀的不同基因型態（例如控制高莖的 T 與矮莖的 t）。</p>
-                </div>
-            </div>
-
-        </div>
-    </section>
-    <!-- ＝＝＝＝ 區塊複製結束 ＝＝＝＝ -->
-    
 <div class="container">
     <header>
         <h1><i class="fas fa-microscope"></i> 基因與遺傳的關係</h1>
         <div class="subtitle">單元五：微觀世界與孟德爾的連結</div>
     </header>
+    <!-- 概念補給站：完全使用現有 CSS class 組合 -->
+    <section>
+        <h2><i class="fas fa-book-reader"></i> 概念補給站（課本 p.43 核心概念）</h2>
+        
+        <!-- 使用 .myth-grid 來達成響應式網格排列 -->
+        <div class="myth-grid">
+            
+            <!-- 名詞 1：染色體 (使用 .exp-card 作為卡片樣式) -->
+            <div class="exp-card">
+                <h3><i class="fas fa-xmark"></i> 染色體 (Chromosome)</h3>
+                <p>位於細胞核內，由 <b>DNA</b> 和 <b>蛋白質</b> 纏繞濃縮而成的構造，平時呈細絲狀，細胞分裂時會濃縮成粗短狀。</p>
+            </div>
+
+            <!-- 名詞 2：DNA -->
+            <div class="exp-card">
+                <h3><i class="fas fa-dna"></i> DNA (去氧核糖核酸)</h3>
+                <p>構成染色體的主要成分，呈雙股螺旋結構，負責攜帶生物體的遺傳密碼。</p>
+            </div>
+
+            <!-- 名詞 3：基因 -->
+            <div class="exp-card">
+                <h3><i class="fas fa-puzzle-piece"></i> 基因 (Gene)</h3>
+                <p>位於 DNA 上具有特定功能的片段，是控制生物性狀（如單雙眼皮、血型）的基本遺傳單位。</p>
+            </div>
+
+            <!-- 名詞 4：同源染色體 -->
+            <div class="exp-card">
+                <h3><i class="fas fa-clone"></i> 同源染色體</h3>
+                <p>體細胞中形狀、大小相似的成對染色體。其中一條來自父方（精子），另一條來自母方（卵子）。</p>
+            </div>
+
+            <!-- 名詞 5：等位基因 -->
+            <div class="exp-card">
+                <h3><i class="fas fa-font"></i> 等位基因 (Allele)</h3>
+                <p>位於同源染色體相對應的位置上，控制同一種性狀的不同基因型態（例如控制高莖的 T 與矮莖的 t）。</p>
+            </div>
+
+        </div>
+    </section>
 
     <!-- Part 1: Micro Zoom (Click & Answer) -->
     <section id="s1">
