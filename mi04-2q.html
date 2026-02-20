@@ -1,0 +1,572 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>遺傳法則：六種情境大挑戰</title>
+    
+    <!-- 引入 Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- 引入 Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;700&family=Comfortaa:wght@700&display=swap" rel="stylesheet">
+
+    <style>
+        :root {
+            --primary-green: #6B8E23; /* 橄欖綠 */
+            --light-green: #F0FFF0;   /* 蜜瓜綠 */
+            --earth-brown: #8B4513;   /* 土壤色 */
+            --text-color: #333333;
+            --correct-color: #2e7d32;
+            --wrong-color: #c62828;
+            --cell-bg: #fff;
+            --header-bg: #e8f5e9;
+        }
+
+        body {
+            font-family: 'Comfortaa', 'Noto Sans TC', sans-serif;
+            background-color: #fcfbf4;
+            color: var(--text-color);
+            margin: 0;
+            padding: 20px;
+            line-height: 1.6;
+            font-size: 18px;
+            overscroll-behavior: none; /* 防止 iPad 下拉重新整理 */
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background-color: white;
+            padding: 30px;
+            border-radius: 20px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+            border: 2px solid #e0e0e0;
+        }
+
+        /* Header */
+        header {
+            text-align: center;
+            border-bottom: 3px solid var(--primary-green);
+            padding-bottom: 20px;
+            margin-bottom: 30px;
+        }
+
+        h1 { color: var(--primary-green); margin-bottom: 10px; }
+        .subtitle { font-size: 1.1em; color: #666; font-weight: bold; }
+        
+        .progress-bar-container {
+            width: 100%; background: #eee; height: 10px; border-radius: 5px; margin-top: 15px; overflow: hidden;
+        }
+        .progress-bar {
+            height: 100%; background: var(--primary-green); width: 0%; transition: width 0.5s;
+        }
+
+        /* Game Area */
+        .game-section {
+            display: flex; flex-direction: column; align-items: center;
+        }
+
+        .level-title {
+            font-size: 1.5em; color: var(--earth-brown); margin-bottom: 20px;
+            background: #fff3e0; padding: 10px 30px; border-radius: 50px; border: 2px dashed var(--earth-brown);
+        }
+
+        /* Punnett Square Layout */
+        .punnett-wrapper {
+            display: grid;
+            grid-template-columns: 60px 120px 120px;
+            grid-template-rows: 60px 120px 120px;
+            gap: 10px;
+            margin-bottom: 30px;
+            justify-content: center;
+        }
+
+        .p-cell {
+            display: flex; justify-content: center; align-items: center;
+            border-radius: 10px; font-size: 1.8em; font-weight: bold;
+            position: relative;
+        }
+
+        .corner { font-size: 0.8em; color: #999; text-align: center; line-height: 1.2; }
+        
+        .p-header {
+            background-color: var(--header-bg); color: var(--primary-green); border: 2px solid var(--primary-green);
+        }
+
+        .p-grid {
+            background-color: var(--cell-bg); border: 3px dashed #ccc; cursor: pointer; transition: 0.3s;
+            flex-direction: row; gap: 5px; color: #555;
+            position: relative;
+        }
+        /* Hover effect for clearing visual cue */
+        .p-grid:hover::after {
+            content: '\f00d'; /* FontAwesome times icon */
+            font-family: "Font Awesome 6 Free";
+            font-weight: 900;
+            position: absolute;
+            font-size: 0.8em;
+            color: rgba(255, 0, 0, 0.3);
+            top: 5px;
+            right: 5px;
+        }
+        .p-grid.hover { background-color: #fff9c4; border-color: orange; transform: scale(1.05); }
+        .p-grid.filled { border-style: solid; border-color: var(--earth-brown); background-color: #fff; }
+
+        /* Draggables */
+        .source-container {
+            background: #e0e0e0; padding: 15px; border-radius: 15px; margin-bottom: 30px;
+            display: flex; gap: 20px; justify-content: center; align-items: center;
+            box-shadow: inset 0 0 10px rgba(0,0,0,0.05);
+            flex-wrap: wrap;
+        }
+
+        .gene-card {
+            width: 60px; height: 60px; background: white;
+            border: 3px solid var(--earth-brown); border-radius: 50%;
+            display: flex; justify-content: center; align-items: center;
+            font-size: 2em; font-weight: bold; color: var(--earth-brown);
+            cursor: grab; user-select: none; touch-action: none;
+            box-shadow: 0 4px 0 #5d4037; transition: transform 0.1s;
+            z-index: 100;
+        }
+        .gene-card:active { transform: scale(0.95); cursor: grabbing; }
+
+        /* Analysis Form */
+        .analysis-form {
+            background: #f9f9f9; padding: 20px; border-radius: 15px; border: 1px solid #ddd; width: 100%; max-width: 600px;
+        }
+
+        .form-row {
+            display: flex; align-items: center; justify-content: space-between; margin-bottom: 15px; flex-wrap: wrap;
+        }
+        .form-label { font-weight: bold; color: #555; width: 150px; }
+        .ratio-group { display: flex; align-items: center; gap: 10px; flex: 1; justify-content: center; }
+        
+        select.num-select {
+            padding: 8px; font-size: 1.1em; border-radius: 8px; border: 2px solid var(--primary-green);
+            background: white; font-family: 'Comfortaa', sans-serif; cursor: pointer; text-align: center;
+        }
+
+        .check-btn {
+            background: var(--primary-green); color: white; border: none;
+            padding: 12px 40px; font-size: 1.2em; border-radius: 50px;
+            cursor: pointer; box-shadow: 0 4px 0 #33691e; transition: 0.2s; margin-top: 10px;
+        }
+        .check-btn:active { transform: translateY(4px); box-shadow: none; }
+
+        /* Summary Table */
+        .summary-section { margin-top: 40px; width: 100%; overflow-x: auto; display: none; }
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+        th { background: var(--earth-brown); color: white; padding: 10px; }
+        td { border: 1px solid #ddd; padding: 10px; text-align: center; background: white; font-weight: bold; color: #555; }
+        tr:nth-child(even) td { background: #f9f9f9; }
+
+        /* Footer */
+        .footer-nav { text-align: center; margin-top: 40px; padding-top: 20px; border-top: 2px solid #eee; }
+        .next-btn {
+            background-color: var(--earth-brown); color: white; padding: 15px 40px; font-size: 1.5em;
+            border-radius: 50px; text-decoration: none; border: none; cursor: pointer; opacity: 0.5; pointer-events: none;
+            box-shadow: 0 5px 0 #5d4037; transition: all 0.3s;
+        }
+        .next-btn.active { opacity: 1; pointer-events: auto; background-color: var(--primary-green); box-shadow: 0 5px 0 #33691e; }
+        .next-btn.active:active { transform: translateY(5px); box-shadow: none; }
+
+        /* Feedback Animation */
+        .feedback-msg {
+            margin-top: 10px; font-weight: bold; min-height: 25px;
+        }
+        
+        @keyframes pop { 0% { transform: scale(0); } 80% { transform: scale(1.2); } 100% { transform: scale(1); } }
+
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <header>
+        <h1><i class="fas fa-th"></i> 遺傳法則的六種情境</h1>
+        <div class="subtitle">單元四之二：棋盤方格法實戰演練</div>
+        <div class="progress-bar-container">
+            <div class="progress-bar" id="progress"></div>
+        </div>
+    </header>
+
+    <div class="game-section">
+        
+        <!-- Level Title -->
+        <div class="level-title" id="level-title">情境 1/6：TT × TT</div>
+
+        <!-- Punnett Square -->
+        <div class="punnett-wrapper">
+            <div class="corner">精子<br>↓<br>卵子</div>
+            <div class="p-cell p-header" id="h-top1">T</div>
+            <div class="p-cell p-header" id="h-top2">T</div>
+            
+            <div class="p-cell p-header" id="h-left1">T</div>
+            <div class="p-cell p-grid drop-zone" data-idx="0"></div>
+            <div class="p-cell p-grid drop-zone" data-idx="1"></div>
+            
+            <div class="p-cell p-header" id="h-left2">T</div>
+            <div class="p-cell p-grid drop-zone" data-idx="2"></div>
+            <div class="p-cell p-grid drop-zone" data-idx="3"></div>
+        </div>
+
+        <!-- Draggable Source -->
+        <div class="source-container">
+            <i class="fas fa-hand-pointer" style="color:#666;"></i>
+            <div class="gene-card" draggable="true" id="src-T">T</div>
+            <div class="gene-card" draggable="true" id="src-t" style="background:#fff3e0;">t</div>
+            <span style="font-size:0.9em; color:#666;">(請拖曳基因填滿上方四個格子，每格需2個，<b>點擊格子可清除重來</b>)</span>
+        </div>
+
+        <!-- Analysis Form -->
+        <div class="analysis-form">
+            <div class="form-row">
+                <div class="form-label">子代基因型比例<br>(TT : Tt : tt)</div>
+                <div class="ratio-group">
+                    <select class="num-select" id="g-TT"><option value="0">0</option><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option></select> :
+                    <select class="num-select" id="g-Tt"><option value="0">0</option><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option></select> :
+                    <select class="num-select" id="g-tt"><option value="0">0</option><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option></select>
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-label">子代表現型比例<br>(高莖 : 矮莖)</div>
+                <div class="ratio-group">
+                    <select class="num-select" id="p-tall"><option value="0">0</option><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option></select> :
+                    <select class="num-select" id="p-short"><option value="0">0</option><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option></select>
+                </div>
+            </div>
+            <div style="text-align:center;">
+                <button class="check-btn" onclick="checkAnswer()">確認答案</button>
+                <div id="feedback" class="feedback-msg"></div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Summary Table -->
+    <div class="summary-section" id="summary-section">
+        <h3><i class="fas fa-clipboard-list"></i> 學習紀錄表</h3>
+        <table id="record-table">
+            <thead>
+                <tr>
+                    <th>親代組合</th>
+                    <th>子代基因型</th>
+                    <th>子代表現型</th>
+                </tr>
+            </thead>
+            <tbody>
+                <!-- Rows injected here -->
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Nav -->
+    <div class="footer-nav">
+        <button class="next-btn" id="next-btn" onclick="goToNextPage()">
+            前往下一關 <i class="fas fa-arrow-right"></i>
+        </button>
+    </div>
+
+</div>
+
+<script>
+    // --- Game Data ---
+    const levels = [
+        { p1: "TT", p2: "TT", label: "TT × TT" },
+        { p1: "TT", p2: "Tt", label: "TT × Tt" },
+        { p1: "TT", p2: "tt", label: "TT × tt" },
+        { p1: "Tt", p2: "Tt", label: "Tt × Tt" },
+        { p1: "Tt", p2: "tt", label: "Tt × tt" },
+        { p1: "tt", p2: "tt", label: "tt × tt" }
+    ];
+
+    let currentLevel = 0;
+    let gridState = ["", "", "", ""]; // Stores content of 4 cells
+
+    // --- Init ---
+    function initLevel() {
+        const lvl = levels[currentLevel];
+        document.getElementById('level-title').innerText = `情境 ${currentLevel + 1}/6：${lvl.label}`;
+        
+        // Update Headers
+        const p1Genes = lvl.p1.split('');
+        const p2Genes = lvl.p2.split('');
+        
+        document.getElementById('h-top1').innerText = p1Genes[0];
+        document.getElementById('h-top2').innerText = p1Genes[1];
+        document.getElementById('h-left1').innerText = p2Genes[0];
+        document.getElementById('h-left2').innerText = p2Genes[1];
+
+        // Reset Grid
+        gridState = ["", "", "", ""];
+        document.querySelectorAll('.drop-zone').forEach(el => {
+            el.innerHTML = "";
+            el.classList.remove('filled');
+            el.style.backgroundColor = "white";
+        });
+
+        // Reset Inputs
+        document.querySelectorAll('select').forEach(s => s.value = "0");
+        document.getElementById('feedback').innerText = "";
+        
+        // Update Progress
+        const percent = (currentLevel / levels.length) * 100;
+        document.getElementById('progress').style.width = percent + "%";
+    }
+
+    // --- Drag & Drop Logic (Mouse + Touch) ---
+    let draggedVal = null;
+    let activeDragEl = null;
+
+    const sources = document.querySelectorAll('.gene-card');
+    const dropZones = document.querySelectorAll('.drop-zone');
+
+    sources.forEach(src => {
+        // Mouse
+        src.addEventListener('dragstart', (e) => {
+            draggedVal = e.target.innerText;
+        });
+
+        // Touch
+        src.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            draggedVal = e.target.innerText;
+            activeDragEl = e.target.cloneNode(true);
+            activeDragEl.style.position = 'absolute';
+            activeDragEl.style.zIndex = 1000;
+            activeDragEl.style.opacity = 0.8;
+            document.body.appendChild(activeDragEl);
+            
+            const touch = e.touches[0];
+            moveDragEl(touch.clientX, touch.clientY);
+        });
+        
+        src.addEventListener('touchmove', (e) => {
+            e.preventDefault();
+            const touch = e.touches[0];
+            moveDragEl(touch.clientX, touch.clientY);
+        });
+
+        src.addEventListener('touchend', (e) => {
+            if (activeDragEl) {
+                activeDragEl.remove();
+                activeDragEl = null;
+                const touch = e.changedTouches[0];
+                const target = document.elementFromPoint(touch.clientX, touch.clientY);
+                const dropZone = target ? target.closest('.drop-zone') : null;
+                if (dropZone) handleDrop(dropZone);
+            }
+        });
+    });
+
+    function moveDragEl(x, y) {
+        if (activeDragEl) {
+            activeDragEl.style.left = (x - 30) + 'px';
+            activeDragEl.style.top = (y - 30) + 'px';
+        }
+    }
+
+    dropZones.forEach(zone => {
+        zone.addEventListener('dragover', (e) => e.preventDefault());
+        zone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            handleDrop(zone);
+        });
+        // Click to clear
+        zone.addEventListener('click', () => {
+            clearCell(zone);
+        });
+    });
+
+    function handleDrop(zone) {
+        const idx = zone.dataset.idx;
+        let content = gridState[idx];
+
+        // Max 2 genes per cell
+        if (content.length < 2) {
+            // Append and sort (Capital first)
+            content += draggedVal;
+            if (content === "tT") content = "Tt";
+            gridState[idx] = content;
+            
+            zone.innerText = content;
+            if (content.length === 2) {
+                zone.classList.add('filled');
+                zone.style.animation = "pop 0.3s";
+            }
+        }
+    }
+
+    function clearCell(zone) {
+        const idx = zone.dataset.idx;
+        gridState[idx] = "";
+        zone.innerText = "";
+        zone.classList.remove('filled');
+    }
+
+    // --- GCD Helper for Ratio Simplification ---
+    function gcd(a, b) {
+        if (b === 0) return a;
+        return gcd(b, a % b);
+    }
+    
+    function getArrayGCD(arr) {
+        let result = arr[0];
+        for (let i = 1; i < arr.length; i++) {
+            result = gcd(result, arr[i]);
+            if(result === 1) return 1;
+        }
+        return result;
+    }
+    
+    function checkRatioMatch(userVals, correctVals) {
+        // 1. Check exact match
+        let isExact = true;
+        for (let i = 0; i < userVals.length; i++) {
+            if (userVals[i] !== correctVals[i]) {
+                isExact = false;
+                break;
+            }
+        }
+        if (isExact) return true;
+        
+        // 2. Check simplified ratio
+        const divisor = getArrayGCD(correctVals);
+        if (divisor > 1) {
+            const simplifiedVals = correctVals.map(v => v / divisor);
+            let isSimplified = true;
+            for (let i = 0; i < userVals.length; i++) {
+                if (userVals[i] !== simplifiedVals[i]) {
+                    isSimplified = false;
+                    break;
+                }
+            }
+            if (isSimplified) return true;
+        }
+        
+        return false;
+    }
+
+    // --- Validation Logic ---
+    function checkAnswer() {
+        const lvl = levels[currentLevel];
+        const p1 = lvl.p1;
+        const p2 = lvl.p2;
+        
+        const correctGrid = [
+            sortGene(p1[0] + p2[0]),
+            sortGene(p1[1] + p2[0]),
+            sortGene(p1[0] + p2[1]),
+            sortGene(p1[1] + p2[1])
+        ];
+
+        // Validate Grid
+        let gridCorrect = true;
+        for(let i=0; i<4; i++) {
+            if (gridState[i] !== correctGrid[i]) {
+                gridCorrect = false;
+                break;
+            }
+        }
+
+        if (!gridCorrect) {
+            showMsg("棋盤方格填寫有誤喔！請檢查配對。", "wrong");
+            return;
+        }
+
+        // Calculate Ratios
+        let genoCounts = { "TT": 0, "Tt": 0, "tt": 0 };
+        let phenoCounts = { "tall": 0, "short": 0 };
+
+        correctGrid.forEach(g => {
+            genoCounts[g]++;
+            if (g.includes("T")) phenoCounts.tall++;
+            else phenoCounts.short++;
+        });
+
+        // Get User Inputs
+        const userTT = parseInt(document.getElementById('g-TT').value);
+        const userTt = parseInt(document.getElementById('g-Tt').value);
+        const user_tt = parseInt(document.getElementById('g-tt').value);
+        const userTall = parseInt(document.getElementById('p-tall').value);
+        const userShort = parseInt(document.getElementById('p-short').value);
+        
+        // Check Ratios (Both Raw and Simplified are accepted)
+        const genoCheck = checkRatioMatch([userTT, userTt, user_tt], [genoCounts.TT, genoCounts.Tt, genoCounts.tt]);
+        const phenoCheck = checkRatioMatch([userTall, userShort], [phenoCounts.tall, phenoCounts.short]);
+
+        if (genoCheck && phenoCheck) {
+            // Success
+            showMsg("答對了！紀錄已保存。", "correct");
+            addRecord(lvl.label, genoCounts, phenoCounts);
+            
+            currentLevel++;
+            if (currentLevel < levels.length) {
+                setTimeout(initLevel, 1500);
+            } else {
+                finishGame();
+            }
+
+        } else {
+            showMsg("比例計算錯誤，請再確認一次（原始比例或最簡比例皆可）！", "wrong");
+        }
+    }
+
+    function sortGene(str) {
+        if (str === "tT") return "Tt";
+        return str;
+    }
+
+    function showMsg(text, type) {
+        const el = document.getElementById('feedback');
+        el.innerHTML = text;
+        el.style.color = type === 'correct' ? 'var(--correct-color)' : 'var(--wrong-color)';
+    }
+
+    function addRecord(title, geno, pheno) {
+        const table = document.getElementById('summary-section');
+        const tbody = document.getElementById('record-table').querySelector('tbody');
+        table.style.display = "block";
+
+        // Display 0 as 0
+        const fmt = (n) => n;
+
+        const row = `
+            <tr style="animation: pop 0.5s">
+                <td>${title}</td>
+                <td>TT:Tt:tt＝${fmt(geno.TT)}:${fmt(geno.Tt)}:${fmt(geno.tt)}</td>
+                <td>高:矮＝${fmt(pheno.tall)}:${fmt(pheno.short)}</td>
+            </tr>
+        `;
+        tbody.innerHTML += row;
+        
+        window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+    }
+
+    function finishGame() {
+        document.getElementById('progress').style.width = "100%";
+        document.getElementById('level-title').innerHTML = "<i class='fas fa-trophy'></i> 全數通關！";
+        document.querySelector('.game-section').innerHTML = "<h2 style='color:var(--primary-green)'>恭喜完成所有情境挑戰！<br>請檢視下方表格並填寫學習單。</h2>";
+        
+        const nextBtn = document.getElementById('next-btn');
+        nextBtn.classList.add('active');
+        nextBtn.innerHTML = "前往下一關 <i class='fas fa-check-circle'></i>";
+    }
+
+    function goToNextPage() {
+        if (!document.getElementById('next-btn').classList.contains('active')) return;
+        
+        if(confirm("恭喜完成挑戰！\n\n請確認：\n1. 下方的表格紀錄是否都看清楚了？\n2. 學習單上的內容是否都填寫正確？\n\n按下「確定」前往下一頁！")) {
+            window.location.href = "mi058.html";
+        }
+    }
+
+    // Start
+    initLevel();
+
+</script>
+</body>
+</html>
